@@ -1,0 +1,58 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import DashboardLayout from './layouts/DashboardLayout';
+import DashboardHome from './pages/DashboardHome';
+import Account from './pages/Account';
+import Salary from './pages/Salary';
+import Supplier from './pages/Supplier';
+import Material from './pages/Material';
+import ExpensesHead from './pages/ExpensesHead';
+import MaterialIn from './pages/MaterialIn';
+import MaterialOut from './pages/MaterialOut';
+import Subcontractor from './pages/Subcontractor';
+import SiteIncharge from './pages/SiteIncharge';
+import HeadOfficeIncome from './pages/HeadOfficeIncome';
+import HeadOfficeExpense from './pages/HeadOfficeExpense';
+import ComingSoon from './pages/ComingSoon';
+import ProtectedRoute from './components/ProtectedRoute';
+import { ThemeProvider } from './contexts/ThemeContext';
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected Dashboard Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<DashboardLayout />}>
+              <Route index element={<DashboardHome />} />
+              <Route path="account" element={<Account />} />
+              <Route path="salary" element={<Salary />} />
+              <Route path="suppliers" element={<Supplier />} />
+              <Route path="material" element={<Material />} />
+              <Route path="expenses" element={<ExpensesHead />} />
+              <Route path="material-in" element={<MaterialIn />} />
+              <Route path="material-out" element={<MaterialOut />} />
+              
+              {/* Head Office Routes */}
+              <Route path="head-office/income" element={<HeadOfficeIncome />} />
+              <Route path="head-office/expense" element={<HeadOfficeExpense />} />
+              
+              {/* Coming Soon Routes */}
+              <Route path="incharge" element={<SiteIncharge />} />
+              <Route path="attendance" element={<ComingSoon title="Staff Attendance" />} />
+              <Route path="subcontractor" element={<Subcontractor />} />
+
+              {/* 404 Route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Router>
+    </ThemeProvider>
+  );
+}
+
+export default App;
