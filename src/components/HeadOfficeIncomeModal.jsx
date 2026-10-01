@@ -35,8 +35,8 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
         
         try {
           const [siteRes, accRes] = await Promise.all([
-            fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/accounts`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/accounts?all=1`, { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
           
           if (siteRes.ok) setSites(await siteRes.json());
@@ -182,7 +182,7 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
                 value={formData.client_name}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
-                placeholder="Enter client name"
+                placeholder="Enter client name" autoComplete="off"
               />
             </div>
 

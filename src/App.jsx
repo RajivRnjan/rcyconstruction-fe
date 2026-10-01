@@ -20,38 +20,43 @@ import DailyReport from './pages/DailyReport';
 import DailyReportsList from './pages/DailyReportsList';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ConfirmProvider } from './components/ConfirmProvider';
 import { Toaster, toast } from 'react-hot-toast';
 
-const originalFetch = window.fetch;
-window.fetch = async (...args) => {
-  const [url, options] = args;
-  const isMutation = options && options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase());
-  
-  try {
-    const response = await originalFetch(...args);
-    if (isMutation) {
-      if (response.ok) {
-         if (url.toString().includes('/login')) {
-             toast.success('Login successful!');
-         } else if (options.method === 'DELETE') {
-             toast.success('Deleted successfully!');
-         } else {
-             toast.success('Saved successfully!');
-         }
-      } else {
-         toast.error('Operation failed!');
+if (!window.__fetchIntercepted) {
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    const [url, options] = args;
+    const isMutation = options && options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase());
+    
+    try {
+      const response = await originalFetch(...args);
+      if (isMutation) {
+        if (response.ok) {
+           if (url.toString().includes('/login')) {
+               toast.success('Login successful!');
+           } else if (options.method === 'DELETE') {
+               toast.success('Deleted successfully!');
+           } else {
+               toast.success('Saved successfully!');
+           }
+        } else {
+           toast.error('Operation failed!');
+        }
       }
+      return response;
+    } catch (error) {
+      if (isMutation) toast.error('Network error!');
+      throw error;
     }
-    return response;
-  } catch (error) {
-    if (isMutation) toast.error('Network error!');
-    throw error;
-  }
-};
+  };
+  window.__fetchIntercepted = true;
+}
 
 function App() {
   return (
     <ThemeProvider>
+      <ConfirmProvider>
       <Toaster position="top-right" />
       <Router>
         <Routes>
@@ -62,6 +67,7 @@ function App() {
             <Route path="/" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
                                           <Route path="salary" element={<Salary />} />
+              <Route path="accounts" element={<Account />} />
               <Route path="suppliers" element={<Supplier />} />
               <Route path="material" element={<Material />} />
               <Route path="expenses" element={<ExpensesHead />} />
@@ -86,6 +92,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+    </ConfirmProvider>
     </ThemeProvider>
   );
 }

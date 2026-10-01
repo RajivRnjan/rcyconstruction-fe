@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { useSearchParams } from 'react-router-dom';
 import { Calendar, Save, Plus, Trash2 } from 'lucide-react';
 
 export default function DailyReport() {
+  const confirm = useConfirm();
+
   const [searchParams] = useSearchParams();
   const reportId = searchParams.get('id');
   const [sites, setSites] = useState([]);
   const [allSubcontractors, setAllSubcontractors] = useState([]);
+  const [expenseSuggestions, setExpenseSuggestions] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [materialsList, setMaterialsList] = useState([]);
   const [siteIncharges, setSiteIncharges] = useState([]);
@@ -18,7 +23,8 @@ export default function DailyReport() {
   // Quick Add Subcontractor States
   const [isSubcontractorModalOpen, setIsSubcontractorModalOpen] = useState(false);
   const [newSubcontractorName, setNewSubcontractorName] = useState('');
-  const [newSubcontractorAmount, setNewSubcontractorLabour] = useState('');
+  const [newSubcontractorAmount, setNewSubcontractorAmount] = useState('');
+  const [newSubcontractorLabour, setNewSubcontractorLabour] = useState('');
   const [newSubcontractorWork, setNewSubcontractorWork] = useState('');
   const [isAddingSubcontractor, setIsAddingSubcontractor] = useState(false);
   const [addingSubcontractorRowIndex, setAddingSubcontractorRowIndex] = useState(null);
@@ -33,7 +39,7 @@ export default function DailyReport() {
     ],
     staff_attendance: [],
     subcontractors: [
-      { name: '', amount: '', work_details: '' }
+      { name: '', no_of_labour: '', amount: '', work_details: '' }
     ],
     material_in: [
       { supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }
@@ -66,7 +72,7 @@ export default function DailyReport() {
                 ...e, 
                 type: e.type === 'PARTY PAYMENT' ? 'SUPPLIER PAYMENT' : (e.type === 'Site expenses' ? 'SITE EXPENSE' : e.type)
               })) : [{ type: 'STAFF PAYMENT', name: '', amount: '' }, { type: 'SUPPLIER PAYMENT', name: '', amount: '' }, { type: 'SITE EXPENSE', name: '', amount: '' }],
-              subcontractors: r.subcontractors && r.subcontractors.length > 0 ? r.subcontractors : [{ name: '', amount: '', work_details: '' }],
+              subcontractors: r.subcontractors && r.subcontractors.length > 0 ? r.subcontractors : [{ name: '', no_of_labour: '', amount: '', work_details: '' }],
               material_in: data.material_in && data.material_in.length > 0 ? data.material_in.map(m => ({
                   supplier: m.supplier_id || '', material: m.material ? m.material.name : '', qnty: m.qnty, rate: m.rate, amount: m.amount, unit: m.unit || ''
               })) : [{ supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }],
@@ -90,12 +96,13 @@ export default function DailyReport() {
         const token = localStorage.getItem('admin_token');
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-        const [projRes, suppRes, matRes, inchargeRes, subRes] = await Promise.all([
-          fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/materials`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/site-incharges`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/subcontractors`, { headers: { 'Authorization': `Bearer ${token}` } })
+        const [projRes, suppRes, matRes, inchargeRes, subRes, expSuggRes] = await Promise.all([
+          fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/suppliers?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/materials?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/site-incharges?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/subcontractors?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/daily-reports/expense-suggestions`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (projRes.ok) setSites(await projRes.json());
@@ -103,6 +110,7 @@ export default function DailyReport() {
         if (matRes.ok) setMaterialsList(await matRes.json());
         if (inchargeRes.ok) setSiteIncharges(await inchargeRes.json());
         if (subRes.ok) setAllSubcontractors(await subRes.json());
+        if (expSuggRes && expSuggRes.ok) setExpenseSuggestions(await expSuggRes.json());
 
       } catch (e) {
         console.error(e);
@@ -152,13 +160,14 @@ export default function DailyReport() {
           ...prev,
           subcontractors: site.site_subcontractors.map(sub => ({
             name: sub.name,
+            no_of_labour: '',
             amount: '',
             work_details: ''
           }))
         }));
       }
     } else if (formData.subcontractors.length > 0 && formData.subcontractors[0].name !== '') {
-      setFormData(prev => ({ ...prev, subcontractors: [{ name: '', amount: '', work_details: '' }] }));
+      setFormData(prev => ({ ...prev, subcontractors: [{ name: '', no_of_labour: '', amount: '', work_details: '' }] }));
     }
   }, [formData.site_id, sites]);
 
@@ -173,7 +182,7 @@ export default function DailyReport() {
 
   const handleAddQuickStaff = () => {
     if (!formData.site_id) {
-      alert("Please select a site first.");
+      toast("Please select a site first.");
       return;
     }
     setNewStaffName('');
@@ -181,7 +190,48 @@ export default function DailyReport() {
     setIsStaffModalOpen(true);
   };
 
+
+  const handleRemoveStaff = async (staffId, index) => {
+    if (!await confirm('Are you sure you want to completely remove this staff from the site?')) return;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      
+      // If it's a new staff without an ID, just remove from UI
+      if (staffId) {
+        const res = await fetch(`${apiUrl}/sites/${formData.site_id}/staff/${staffId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to delete staff from backend');
+      }
+      
+      // Remove from formData
+      const newAttendance = formData.staff_attendance.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, staff_attendance: newAttendance }));
+      
+      // Remove from global sites state to prevent re-syncing
+      if (staffId) {
+        setSites(prevSites => prevSites.map(s => {
+          if (s.id.toString() === formData.site_id.toString()) {
+            return {
+              ...s,
+              site_staff: (s.site_staff || []).filter(st => st.id !== staffId)
+            };
+          }
+          return s;
+        }));
+      }
+      
+    } catch (e) {
+      console.error(e);
+      toast('Error removing staff');
+    }
+  };
+
   const submitNewStaff = async () => {
+
     const name = newStaffName.trim();
     if (!name) return;
     
@@ -219,11 +269,11 @@ export default function DailyReport() {
         }));
         setIsStaffModalOpen(false);
       } else {
-        alert("Failed to add staff.");
+        toast("Failed to add staff.");
       }
     } catch (e) {
       console.error(e);
-      alert("An error occurred while adding staff.");
+      toast("An error occurred while adding staff.");
     } finally {
       setIsAddingStaff(false);
     }
@@ -231,7 +281,7 @@ export default function DailyReport() {
 
   const submitNewSubcontractor = async () => {
     if (!newSubcontractorName.trim()) {
-      alert("Please enter a subcontractor name");
+      toast("Please enter a subcontractor name");
       return;
     }
     
@@ -240,7 +290,7 @@ export default function DailyReport() {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const res = await fetch(`${apiUrl}/subcontractors`, {
+      const res = await fetch(`${apiUrl}/subcontractors?all=1`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -252,6 +302,7 @@ export default function DailyReport() {
           date: formData.date,
           name: newSubcontractorName,
           amount: newSubcontractorAmount || 0,
+          no_of_labour: newSubcontractorLabour || 0,
           work_details: newSubcontractorWork || ''
         })
       });
@@ -271,15 +322,16 @@ export default function DailyReport() {
         
         setIsSubcontractorModalOpen(false);
         setNewSubcontractorName('');
+        setNewSubcontractorAmount('');
         setNewSubcontractorLabour('');
         setNewSubcontractorWork('');
-        alert("Subcontractor added successfully!");
+        toast("Subcontractor added successfully!");
       } else {
-        alert("Failed to add subcontractor.");
+        toast("Failed to add subcontractor.");
       }
     } catch (e) {
       console.error(e);
-      alert("An error occurred");
+      toast("An error occurred");
     } finally {
       setIsAddingSubcontractor(false);
     }
@@ -290,7 +342,7 @@ export default function DailyReport() {
 
   const handleSave = async () => {
     if (!formData.site_id) {
-      alert("Error: Please select a Site before saving!");
+      toast("Error: Please select a Site before saving!");
       return;
     }
     
@@ -313,15 +365,15 @@ export default function DailyReport() {
       });
 
       if (res.ok) {
-        alert("Success! Daily Report saved to database.");
+        
       } else {
         const errorData = await res.json();
         console.error(errorData);
-        alert("Failed to save report. Check console for details.");
+        toast("Failed to save report. Check console for details.");
       }
     } catch (e) {
       console.error(e);
-      alert("An error occurred while saving the report.");
+      toast("An error occurred while saving the report.");
     } finally {
       setIsSaving(false);
     }
@@ -448,15 +500,20 @@ export default function DailyReport() {
               {formData.staff_attendance.map((att, i) => (
                 <div key={att.staff_id} className="p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate pr-2">{att.name}</span>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
-                      checked={att.status === 'P'} 
-                      onChange={e => handleDynamicChange('staff_attendance', i, 'status', e.target.checked ? 'P' : 'A')}
-                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Present</span>
-                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={att.status === 'P'} 
+                        onChange={e => handleDynamicChange('staff_attendance', i, 'status', e.target.checked ? 'P' : 'A')}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Present</span>
+                    </label>
+                    <button onClick={() => handleRemoveStaff(att.staff_id, i)} className="text-gray-400 hover:text-red-500 p-1" title="Remove staff from site">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -513,6 +570,9 @@ export default function DailyReport() {
 
           {/* SITE EXPENSES */}
           <div>
+            <datalist id="expense-suggestions">
+              {expenseSuggestions.map((sugg, i) => <option key={i} value={sugg} />)}
+            </datalist>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">SITE EXPENSES</h3>
               <button onClick={() => addRow('expenses', {type:'SITE EXPENSE', name:'', amount:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
@@ -520,7 +580,7 @@ export default function DailyReport() {
             <div className="space-y-3">
               {formData.expenses.map((exp, i) => (exp.type === 'SITE EXPENSE' || exp.type === 'Site expenses') && (
                 <div key={i} className="flex gap-4 items-center">
-                  <input type="text" placeholder="Expense Details" value={exp.name || ''} onChange={e => handleDynamicChange('expenses', i, 'name', e.target.value)} className="w-full max-w-md px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <input type="text" list="expense-suggestions" placeholder="Expense Details" value={exp.name || ''} onChange={e => handleDynamicChange('expenses', i, 'name', e.target.value)} className="w-full max-w-md px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="number" placeholder="Amount" value={exp.amount} onChange={e => handleDynamicChange('expenses', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <button onClick={() => removeRow('expenses', i)} className="p-2 text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4"/></button>
                 </div>
@@ -532,22 +592,14 @@ export default function DailyReport() {
           <div>
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Subcontract Labour</h3>
-                <button onClick={() => addRow('subcontractors', {name:'', amount:'', work_details:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
+                <button onClick={() => addRow('subcontractors', {name:'', no_of_labour:'', amount:'', work_details:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
             </div>
             
             <div className="space-y-3">
               {formData.subcontractors.map((sub, i) => (
                 <div key={i} className="flex gap-3 items-start">
-                  <div className="flex gap-1">
-                    <select value={sub.name} onChange={e => handleDynamicChange('subcontractors', i, 'name', e.target.value)} className="w-48 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
-                      <option value="">Select Name</option>
-                      {availableSubcontractorNames.map(name => {
-                        if (formData.subcontractors.some((sub, idx) => sub.name === name && idx !== i)) return null;
-                        return <option key={name} value={name}>{name}</option>;
-                      })}
-                    </select>
-                    <button type="button" onClick={() => { setAddingSubcontractorRowIndex(i); setIsSubcontractorModalOpen(true); }} className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-lg leading-none" title="Add New Subcontractor">+</button>
-                  </div>
+                  <input type="text" list="subcontractor-suggestions" placeholder="Subcontractor Name" value={sub.name || ''} onChange={e => handleDynamicChange('subcontractors', i, 'name', e.target.value)} className="w-48 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <input type="number" placeholder="Labour Count" value={sub.no_of_labour || ''} onChange={e => handleDynamicChange('subcontractors', i, 'no_of_labour', e.target.value)} className="w-28 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="number" placeholder="Amount" value={sub.amount} onChange={e => handleDynamicChange('subcontractors', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="text" placeholder="Work Details" value={sub.work_details} onChange={e => handleDynamicChange('subcontractors', i, 'work_details', e.target.value)} className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <button onClick={() => removeRow('subcontractors', i)} className="p-2 text-gray-400 hover:text-red-500 mt-0.5"><Trash2 className="w-4 h-4"/></button>
@@ -592,6 +644,10 @@ export default function DailyReport() {
   <datalist id="materials-list">
     {materialsList.map(m => <option key={m.id} value={m.name} />)}
   </datalist>
+      <datalist id="subcontractor-suggestions">
+        {availableSubcontractorNames.map((name, i) => <option key={i} value={name} />)}
+      </datalist>
+
 </td>
                                 <td className="px-4 py-2"><input type="text" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_in', i, 'unit', e.target.value)} /></td>
                                 <td className="px-4 py-2"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_in', i, 'qnty', e.target.value)} /></td>
@@ -728,13 +784,23 @@ export default function DailyReport() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Labour Count</label>
                 <input 
                   type="number" 
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   placeholder="Enter labour count..."
-                  value={newSubcontractorAmount}
+                  value={newSubcontractorLabour}
                   onChange={(e) => setNewSubcontractorLabour(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                <input 
+                  type="number" 
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Enter amount..."
+                  value={newSubcontractorAmount}
+                  onChange={(e) => setNewSubcontractorAmount(e.target.value)}
                 />
               </div>
 

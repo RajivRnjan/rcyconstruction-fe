@@ -62,7 +62,7 @@ export default function AccountModal({ isOpen, onClose, onSuccess, initialData =
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const url = mode === 'edit' ? `${apiUrl}/accounts/${initialData.id}` : `${apiUrl}/accounts`;
+      const url = mode === 'edit' ? `${apiUrl}/accounts/${initialData.id}` : `${apiUrl}/accounts?all=1`;
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

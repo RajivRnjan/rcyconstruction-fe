@@ -45,6 +45,7 @@ const navItems = [
       { name: 'Reports List', path: '/daily-reports-list' }]
   },
   { name: 'Staff Salary', path: '/salary', icon: Users },
+  { name: 'Accounts', path: '/accounts', icon: Wallet },
   { 
     name: 'Head Office', 
     icon: Building2,
@@ -91,6 +92,7 @@ export default function DashboardLayout() {
   };
 
   const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to logout?")) return;
     try {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';

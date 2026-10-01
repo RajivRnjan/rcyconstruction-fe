@@ -9,6 +9,9 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
   const [sites, setSites] = useState([]);
   const [expensesHeads, setExpensesHeads] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [subcontractors, setSubcontractors] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [expenseSuggestions, setExpenseSuggestions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   
   const paymentModes = [
@@ -24,6 +27,9 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
     site_id: '',
     expenses_head: '',
     supplier_id: '',
+          subcontractor_id: '',
+          staff_id: '',
+          person_name: '',
     mode_of_payment: '',
     account_id: '',
     amount: '',
@@ -37,15 +43,21 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const [siteRes, supRes, accRes] = await Promise.all([
-            fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/accounts`, { headers: { 'Authorization': `Bearer ${token}` } })
+          const [siteRes, supRes, accRes, subRes, staffRes, expSuggRes] = await Promise.all([
+            fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/suppliers?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/accounts?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/subcontractors?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/staff-salaries?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/daily-reports/expense-suggestions`, { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
           
           if (siteRes.ok) setSites(await siteRes.json());
           if (supRes.ok) setSuppliers(await supRes.json());
           if (accRes.ok) setAccounts(await accRes.json());
+          if (subRes && subRes.ok) setSubcontractors(await subRes.json());
+          if (staffRes && staffRes.ok) setStaff(await staffRes.json());
+          if (expSuggRes && expSuggRes.ok) setExpenseSuggestions(await expSuggRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);
         }
@@ -62,6 +74,9 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
           site_id: initialData.site_id || '',
           expenses_head: initialData.expenses_head || '',
           supplier_id: initialData.supplier_id || '',
+          subcontractor_id: initialData.subcontractor_id || '',
+          staff_id: initialData.staff_id || '',
+          person_name: initialData.person_name || '',
           mode_of_payment: initialData.mode_of_payment || '',
           account_id: initialData.account_id || '',
           amount: initialData.amount || '',
@@ -73,6 +88,9 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
           site_id: '',
           expenses_head: '',
           supplier_id: '',
+          subcontractor_id: '',
+          staff_id: '',
+          person_name: '',
           mode_of_payment: '',
           account_id: '',
           amount: '',
@@ -182,29 +200,84 @@ export default function HeadOfficeExpenseModal({ isOpen, onClose, onSuccess, ini
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expenses Head *</label>
-              <input
-                type="text"
+              <SearchableSelect
                 name="expenses_head"
-                required
+                required={true}
                 disabled={isView}
                 value={formData.expenses_head}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
-                placeholder="Enter Expenses Head"
+                onChange={(val) => {
+                  setFormData({ 
+                    ...formData, 
+                    expenses_head: val, 
+                    supplier_id: '', 
+                    subcontractor_id: '', 
+                    staff_id: '', 
+                    person_name: '' 
+                  });
+                }}
+                options={[
+                  { value: 'Supplier', label: 'Supplier' },
+                  { value: 'Subcontractor', label: 'Subcontractor' },
+                  { value: 'Staff', label: 'Staff' },
+                  { value: 'Site Expense', label: 'Site Expense' }
+                ]}
+                placeholder="Select Expenses Head"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Supplier Name *</label>
-              <SearchableSelect
-                name="supplier_id"
-                required={true}
-                disabled={isView}
-                value={formData.supplier_id}
-                onChange={(val) => setFormData({ ...formData, supplier_id: val })}
-                options={suppliers.map(s => ({ value: s.id, label: s.name }))}
-                placeholder="Select Supplier"
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
+              {formData.expenses_head === 'Supplier' && (
+                <SearchableSelect
+                  name="supplier_id"
+                  required={true}
+                  disabled={isView}
+                  value={formData.supplier_id}
+                  onChange={(val) => setFormData({ ...formData, supplier_id: val })}
+                  options={suppliers.map(s => ({ value: s.id, label: s.name }))}
+                  placeholder="Select Supplier"
+                />
+              )}
+              {formData.expenses_head === 'Subcontractor' && (
+                <SearchableSelect
+                  name="subcontractor_id"
+                  required={true}
+                  disabled={isView}
+                  value={formData.subcontractor_id}
+                  onChange={(val) => setFormData({ ...formData, subcontractor_id: val })}
+                  options={subcontractors.map(s => ({ value: s.id, label: s.name }))}
+                  placeholder="Select Subcontractor"
+                />
+              )}
+              {formData.expenses_head === 'Staff' && (
+                <SearchableSelect
+                  name="staff_id"
+                  required={true}
+                  disabled={isView}
+                  value={formData.staff_id}
+                  onChange={(val) => setFormData({ ...formData, staff_id: val })}
+                  options={staff.map(s => ({ value: s.id, label: s.name }))}
+                  placeholder="Select Staff"
+                />
+              )}
+              {(formData.expenses_head === 'Site Expense' || !formData.expenses_head) && (
+                <>
+                  <input
+                    type="text"
+                    name="person_name"
+                    required={formData.expenses_head === 'Site Expense'}
+                    disabled={isView}
+                    value={formData.person_name}
+                    onChange={handleChange}
+                    list="expense-suggestions-modal"
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    placeholder={formData.expenses_head === 'Site Expense' ? "Enter Expense Name" : "Select Head First"} autoComplete="off"
+                  />
+                  <datalist id="expense-suggestions-modal">
+                    {expenseSuggestions.map((sugg, i) => <option key={i} value={sugg} />)}
+                  </datalist>
+                </>
+              )}
             </div>
 
             <div>

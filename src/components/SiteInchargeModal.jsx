@@ -27,7 +27,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const siteRes = await fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const siteRes = await fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } });
           if (siteRes.ok) setSites(await siteRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);

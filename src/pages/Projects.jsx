@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import AddProjectModal from '../components/AddProjectModal';
 
 export default function Projects() {
+  const confirm = useConfirm();
+
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -54,7 +58,7 @@ export default function Projects() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this project? All BOQ items will also be deleted.')) {
+    if (!await confirm('Are you sure you want to delete this project? All BOQ items will also be deleted.')) {
       return;
     }
     
@@ -73,11 +77,11 @@ export default function Projects() {
       if (response.ok) {
         fetchMasterSheets();
       } else {
-        alert('Failed to delete project');
+        toast('Failed to delete project');
       }
     } catch (error) {
       console.error('Error deleting project:', error);
-      alert('Error deleting project');
+      toast('Error deleting project');
     }
   };
 

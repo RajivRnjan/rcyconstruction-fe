@@ -1,15 +1,49 @@
 import { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import SiteInchargeModal from '../components/SiteInchargeModal';
+import Pagination from '../components/Pagination';
 
 export default function SiteIncharge() {
+  const confirm = useConfirm();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterSite, setFilterSite] = useState('');
+  const [sites, setSites] = useState([]);
 
-  const fetchRecords = async () => {
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const token = localStorage.getItem('admin_token');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const res = await fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) setSites(await res.json());
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchSites();
+  }, []);
+
+  useEffect(() => {
+    fetchRecords(currentPage, debouncedSearch, filterSite);
+  }, [currentPage, debouncedSearch, filterSite]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchRecords = async (page = 1, search = '', site = '') => {
     try {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -23,7 +57,13 @@ export default function SiteIncharge() {
       
       if (response.ok) {
         const data = await response.json();
-        setRecords(data);
+        if (data.data) {
+          setRecords(data.data);
+          setPagination(data);
+        } else {
+          setRecords(data);
+          setPagination(null);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch site incharge records:', error);
@@ -32,9 +72,7 @@ export default function SiteIncharge() {
     }
   };
 
-  useEffect(() => {
-    fetchRecords();
-  }, []);
+
 
   const handleSuccess = () => {
     fetchRecords();
@@ -52,7 +90,7 @@ export default function SiteIncharge() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
+    if (!await confirm('Are you sure you want to delete this record?')) return;
     
     try {
       const token = localStorage.getItem('admin_token');
@@ -69,11 +107,11 @@ export default function SiteIncharge() {
       if (response.ok) {
         fetchRecords();
       } else {
-        alert('Failed to delete record');
+        toast('Failed to delete record');
       }
     } catch (error) {
       console.error('Error deleting record:', error);
-      alert('Error deleting record');
+      toast('Error deleting record');
     }
   };
 
@@ -114,7 +152,7 @@ export default function SiteIncharge() {
                 <tr>
                   <td colSpan="9" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
-              ) : records.length === 0 ? (
+              ) : (!records || records.length === 0) ? (
                 <tr>
                   <td colSpan="9" className="px-6 py-8 text-center text-gray-500">No records found.</td>
                 </tr>
@@ -149,6 +187,7 @@ export default function SiteIncharge() {
           </table>
         </div>
       </div>
+      <Pagination pagination={pagination} onPageChange={setCurrentPage} />
 
       <SiteInchargeModal 
         isOpen={isModalOpen} 

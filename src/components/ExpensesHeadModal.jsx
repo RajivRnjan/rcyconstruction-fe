@@ -46,7 +46,7 @@ export default function ExpensesHeadModal({ isOpen, onClose, onSuccess, initialD
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const url = mode === 'edit' ? `${apiUrl}/expenses-heads/${initialData.id}` : `${apiUrl}/expenses-heads`;
+      const url = mode === 'edit' ? `${apiUrl}/expenses-heads/${initialData.id}` : `${apiUrl}/expenses-heads?all=1`;
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

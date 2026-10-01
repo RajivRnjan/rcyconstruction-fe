@@ -71,7 +71,7 @@ export default function SalaryModal({ isOpen, onClose, onSuccess, initialData = 
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const url = mode === 'edit' ? `${apiUrl}/staff-salaries/${initialData.id}` : `${apiUrl}/staff-salaries`;
+      const url = mode === 'edit' ? `${apiUrl}/staff-salaries/${initialData.id}` : `${apiUrl}/staff-salaries?all=1`;
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

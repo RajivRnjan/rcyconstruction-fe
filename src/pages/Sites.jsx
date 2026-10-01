@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import SiteModal from '../components/SiteModal';
 
 export default function Sites() {
+  const confirm = useConfirm();
+
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -55,7 +59,7 @@ export default function Sites() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this site?')) {
+    if (!await confirm('Are you sure you want to delete this site?')) {
       return;
     }
     
@@ -74,11 +78,11 @@ export default function Sites() {
       if (response.ok) {
         fetchSites();
       } else {
-        alert('Failed to delete site');
+        toast('Failed to delete site');
       }
     } catch (error) {
       console.error('Error deleting site:', error);
-      alert('Error deleting site');
+      toast('Error deleting site');
     }
   };
 

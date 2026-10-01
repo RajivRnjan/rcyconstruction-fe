@@ -33,10 +33,10 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
         
         try {
           const [siteRes, expRes, supRes, matRes] = await Promise.all([
-            fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/expenses-heads`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${apiUrl}/materials`, { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/expenses-heads?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/suppliers?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${apiUrl}/materials?all=1`, { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
           
           if (siteRes.ok) setSites(await siteRes.json());

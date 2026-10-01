@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import MaterialOutModal from '../components/MaterialOutModal';
 
 export default function MaterialOut() {
+  const confirm = useConfirm();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -52,7 +56,7 @@ export default function MaterialOut() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
+    if (!await confirm('Are you sure you want to delete this record?')) return;
     
     try {
       const token = localStorage.getItem('admin_token');
@@ -69,11 +73,11 @@ export default function MaterialOut() {
       if (response.ok) {
         fetchRecords();
       } else {
-        alert('Failed to delete record');
+        toast('Failed to delete record');
       }
     } catch (error) {
       console.error('Error deleting record:', error);
-      alert('Error deleting record');
+      toast('Error deleting record');
     }
   };
 

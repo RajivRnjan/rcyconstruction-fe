@@ -1,20 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
+import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
+import Pagination from '../components/Pagination';
 import AccountModal from '../components/AccountModal';
 
 export default function Account() {
+  const confirm = useConfirm();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const fetchAccounts = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchAccounts = async (page = 1, search = '') => {
     try {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const response = await fetch(`${apiUrl}/accounts`, {
+      const response = await fetch(`${apiUrl}/accounts?page=${page}&search=${search}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
@@ -23,7 +37,13 @@ export default function Account() {
       
       if (response.ok) {
         const data = await response.json();
-        setAccounts(data);
+        if (data.data) {
+          setAccounts(data.data);
+          setPagination(data);
+        } else {
+          setAccounts(data);
+          setPagination(null);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch accounts:', error);
@@ -33,8 +53,8 @@ export default function Account() {
   };
 
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    fetchAccounts(currentPage, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
 
   const handleSuccess = () => {
     fetchAccounts();
@@ -52,7 +72,7 @@ export default function Account() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) {
+    if (!await confirm('Are you sure you want to delete this record?')) {
       return;
     }
     
@@ -71,11 +91,11 @@ export default function Account() {
       if (response.ok) {
         fetchAccounts();
       } else {
-        alert('Failed to delete record');
+        toast('Failed to delete record');
       }
     } catch (error) {
       console.error('Error deleting record:', error);
-      alert('Error deleting record');
+      toast('Error deleting record');
     }
   };
 
@@ -115,7 +135,7 @@ export default function Account() {
                 <tr>
                   <td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
-              ) : accounts.length === 0 ? (
+              ) : (!accounts || accounts.length === 0) ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-8 text-center text-gray-500">No records found. Click "Add Record" to create one.</td>
                 </tr>
@@ -148,6 +168,7 @@ export default function Account() {
           </table>
         </div>
       </div>
+      <Pagination pagination={pagination} onPageChange={setCurrentPage} />
 
       <AccountModal 
         isOpen={isModalOpen} 

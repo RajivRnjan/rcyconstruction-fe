@@ -76,7 +76,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
         
         const [inchRes] = await Promise.all([
           
-          fetch(`${apiUrl}/site-incharges`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${apiUrl}/site-incharges?all=1`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         
@@ -133,7 +133,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
     try {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const url = mode === 'edit' ? `${apiUrl}/sites/${initialData.id}` : `${apiUrl}/sites`;
+      const url = mode === 'edit' ? `${apiUrl}/sites/${initialData.id}` : `${apiUrl}/sites?all=1`;
       
       const response = await fetch(url, {
         method: mode === 'edit' ? 'PUT' : 'POST',
@@ -488,7 +488,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
               const token = localStorage.getItem('admin_token');
               const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
               try {
-                const res = await fetch(`${apiUrl}/site-incharges`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch(`${apiUrl}/site-incharges?all=1`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (res.ok) {
                   const data = await res.json();
                   setIncharges(data);

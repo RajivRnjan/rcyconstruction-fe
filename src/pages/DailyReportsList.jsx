@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Edit, Filter, Plus, Calendar } from 'lucide-react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
+import { Eye, Edit, Filter, Plus, Calendar, Trash2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Pagination from '../components/Pagination';
 
 const DailyReportsList = () => {
     const [reports, setReports] = useState([]);
@@ -9,7 +12,12 @@ const DailyReportsList = () => {
     
     
     const [filterSite, setFilterSite] = useState('');
+    const [filterDate, setFilterDate] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [pagination, setPagination] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const navigate = useNavigate();
 
@@ -17,32 +25,41 @@ const DailyReportsList = () => {
         try {
             const token = localStorage.getItem('admin_token');
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-            const [projRes, siteRes] = await Promise.all([
-                
-                fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-            
+            const siteRes = await fetch(`${apiUrl}/sites?all=true`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (siteRes.ok) setSites(await siteRes.json());
         } catch (e) {
             console.error("Error fetching dropdowns:", e);
         }
     };
 
-    const fetchReports = async () => {
+    useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchReports = async (page = 1, search = '') => {
         setIsLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
             
-            let url = `${apiUrl}/daily-reports?`;
+            let url = `${apiUrl}/daily-reports?page=${page}&search=${search}&`;
             
             if (filterSite) url += `site_id=${filterSite}&`;
+            if (filterDate) url += `date=${filterDate}&`;
 
             const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                setReports(await res.json());
+                const data = await res.json();
+                if (data.data) {
+                    setReports(data.data);
+                    setPagination(data);
+                } else {
+                    setReports(data);
+                    setPagination(null);
+                }
             }
         } catch (e) {
             console.error("Error fetching reports:", e);
@@ -51,13 +68,35 @@ const DailyReportsList = () => {
         }
     };
 
+
+    const handleDelete = async (id) => {
+        if (!await confirm('Are you sure you want to delete this report?')) return;
+        try {
+            const token = localStorage.getItem('admin_token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+            const res = await fetch(`${apiUrl}/daily-reports/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                fetchReports();
+            } else {
+                toast('Failed to delete report');
+            }
+        } catch (e) {
+            console.error(e);
+            toast('Error deleting report');
+        }
+    };
+
     useEffect(() => {
+
         fetchDropdowns();
     }, []);
 
     useEffect(() => {
-        fetchReports();
-    }, [filterSite]);
+        fetchReports(currentPage, debouncedSearch);
+    }, [filterSite, filterDate, currentPage, debouncedSearch]);
 
     const filteredSites = sites;
 
@@ -83,13 +122,37 @@ const DailyReportsList = () => {
 
                 <select 
                     value={filterSite} 
-                    onChange={e => setFilterSite(e.target.value)}
+                    onChange={e => { setFilterSite(e.target.value); setCurrentPage(1); }}
                     className="w-full md:w-64 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
                     disabled={filteredSites.length === 0}
                 >
                     <option value="">All Sites</option>
                     {filteredSites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+                        <input
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => { setFilterDate(e.target.value); setCurrentPage(1); }}
+                            className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                        />
+                        <div className="relative w-full md:w-64">
+                          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input 
+                            type="text" 
+                            placeholder="Search by Incharge..." 
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        {(filterSite || filterDate || searchQuery) && (
+                            <button
+                                onClick={() => { setFilterSite(''); setFilterDate(''); setSearchQuery(''); setCurrentPage(1); }}
+                                className="text-sm text-red-500 hover:text-red-700 transition-colors"
+                            >
+                                Clear
+                            </button>
+                        )}
             </div>
 
             {/* Table */}
@@ -130,12 +193,18 @@ const DailyReportsList = () => {
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">
                                             {new Date(report.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-6 py-4 text-right flex justify-end gap-2">
                                             <button 
                                                 onClick={() => navigate(`/daily-report?id=${report.id}`)}
                                                 className="text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 inline-flex font-medium text-xs transition-colors"
                                             >
                                                 <Edit className="w-3.5 h-3.5"/> Edit / View
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDelete(report.id)}
+                                                className="text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 inline-flex font-medium text-xs transition-colors"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5"/> Delete
                                             </button>
                                         </td>
                                     </tr>
@@ -145,6 +214,7 @@ const DailyReportsList = () => {
                     </table>
                 </div>
             </div>
+            <Pagination pagination={pagination} onPageChange={setCurrentPage} />
         </div>
     );
 };

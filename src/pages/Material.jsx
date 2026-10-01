@@ -1,20 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
+import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
+import Pagination from '../components/Pagination';
 import MaterialModal from '../components/MaterialModal';
 
 export default function Material() {
+  const confirm = useConfirm();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const fetchMaterials = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchMaterials = async (page = 1, search = '') => {
     try {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const response = await fetch(`${apiUrl}/materials`, {
+      const response = await fetch(`${apiUrl}/materials?page=${page}&search=${search}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
@@ -23,7 +37,13 @@ export default function Material() {
       
       if (response.ok) {
         const data = await response.json();
-        setMaterials(data);
+        if (data.data) {
+          setMaterials(data.data);
+          setPagination(data);
+        } else {
+          setMaterials(data);
+          setPagination(null);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch materials:', error);
@@ -33,8 +53,8 @@ export default function Material() {
   };
 
   useEffect(() => {
-    fetchMaterials();
-  }, []);
+    fetchMaterials(currentPage, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
 
   const handleSuccess = () => {
     fetchMaterials();
@@ -52,7 +72,7 @@ export default function Material() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this material?')) {
+    if (!await confirm('Are you sure you want to delete this material?')) {
       return;
     }
     
@@ -71,11 +91,11 @@ export default function Material() {
       if (response.ok) {
         fetchMaterials();
       } else {
-        alert('Failed to delete material');
+        toast('Failed to delete material');
       }
     } catch (error) {
       console.error('Error deleting material:', error);
-      alert('Error deleting material');
+      toast('Error deleting material');
     }
   };
 
@@ -87,13 +107,25 @@ export default function Material() {
           <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">MATERIALS</h2>
           <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage material inventory list</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal('create')}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20"
-        >
-          <Plus className="w-5 h-5" />
-          Add Material
-        </button>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search materials..." 
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button 
+              onClick={() => handleOpenModal('create')}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5" />
+              Add Material
+            </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xl transition-colors duration-300">
@@ -112,7 +144,7 @@ export default function Material() {
                 <tr>
                   <td colSpan="4" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
-              ) : materials.length === 0 ? (
+              ) : (!materials || materials.length === 0) ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-8 text-center text-gray-500">No records found. Click "Add Material" to create one.</td>
                 </tr>
@@ -146,6 +178,7 @@ export default function Material() {
           </table>
         </div>
       </div>
+      <Pagination pagination={pagination} onPageChange={setCurrentPage} />
 
       <MaterialModal 
         isOpen={isModalOpen} 

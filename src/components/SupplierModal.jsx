@@ -55,7 +55,7 @@ export default function SupplierModal({ isOpen, onClose, onSuccess, initialData 
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const url = mode === 'edit' ? `${apiUrl}/suppliers/${initialData.id}` : `${apiUrl}/suppliers`;
+      const url = mode === 'edit' ? `${apiUrl}/suppliers/${initialData.id}` : `${apiUrl}/suppliers?all=1`;
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

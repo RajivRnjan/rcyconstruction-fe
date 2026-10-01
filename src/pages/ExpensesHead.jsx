@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { toast } from "react-hot-toast";
+import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import ExpensesHeadModal from '../components/ExpensesHeadModal';
 
 export default function ExpensesHead() {
+  const confirm = useConfirm();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -52,7 +56,7 @@ export default function ExpensesHead() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this expenses head?')) {
+    if (!await confirm('Are you sure you want to delete this expenses head?')) {
       return;
     }
     
@@ -71,11 +75,11 @@ export default function ExpensesHead() {
       if (response.ok) {
         fetchExpensesHeads();
       } else {
-        alert('Failed to delete expenses head');
+        toast('Failed to delete expenses head');
       }
     } catch (error) {
       console.error('Error deleting expenses head:', error);
-      alert('Error deleting expenses head');
+      toast('Error deleting expenses head');
     }
   };
 
