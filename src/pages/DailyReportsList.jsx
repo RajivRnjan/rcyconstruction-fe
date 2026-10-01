@@ -102,14 +102,15 @@ const DailyReportsList = () => {
                                 <th className="px-6 py-4 font-medium">Site</th>
                                 <th className="px-6 py-4 font-medium">Incharge</th>
                                 <th className="px-6 py-4 font-medium">Outst. Balance</th>
+                                <th className="px-6 py-4 font-medium">Updated At</th>
                                 <th className="px-6 py-4 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {isLoading ? (
-                                <tr><td colSpan="5" className="text-center py-8 text-gray-400">Loading...</td></tr>
+                                <tr><td colSpan="6" className="text-center py-8 text-gray-400">Loading...</td></tr>
                             ) : reports.length === 0 ? (
-                                <tr><td colSpan="5" className="text-center py-8 text-gray-400">No reports found matching your filters.</td></tr>
+                                <tr><td colSpan="6" className="text-center py-8 text-gray-400">No reports found matching your filters.</td></tr>
                             ) : (
                                 reports.map((report) => (
                                     <tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -125,6 +126,9 @@ const DailyReportsList = () => {
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono">
                                             ₹{parseFloat(report.outstanding_balance).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">
+                                            {new Date(report.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button 

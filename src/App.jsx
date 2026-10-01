@@ -20,10 +20,39 @@ import DailyReport from './pages/DailyReport';
 import DailyReportsList from './pages/DailyReportsList';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster, toast } from 'react-hot-toast';
+
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const [url, options] = args;
+  const isMutation = options && options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase());
+  
+  try {
+    const response = await originalFetch(...args);
+    if (isMutation) {
+      if (response.ok) {
+         if (url.toString().includes('/login')) {
+             toast.success('Login successful!');
+         } else if (options.method === 'DELETE') {
+             toast.success('Deleted successfully!');
+         } else {
+             toast.success('Saved successfully!');
+         }
+      } else {
+         toast.error('Operation failed!');
+      }
+    }
+    return response;
+  } catch (error) {
+    if (isMutation) toast.error('Network error!');
+    throw error;
+  }
+};
 
 function App() {
   return (
     <ThemeProvider>
+      <Toaster position="top-right" />
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />

@@ -9,21 +9,31 @@ export default function DailyReport() {
   const [allSubcontractors, setAllSubcontractors] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [materialsList, setMaterialsList] = useState([]);
+  const [siteIncharges, setSiteIncharges] = useState([]);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffSalary, setNewStaffSalary] = useState('');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
+
+  // Quick Add Subcontractor States
+  const [isSubcontractorModalOpen, setIsSubcontractorModalOpen] = useState(false);
+  const [newSubcontractorName, setNewSubcontractorName] = useState('');
+  const [newSubcontractorAmount, setNewSubcontractorLabour] = useState('');
+  const [newSubcontractorWork, setNewSubcontractorWork] = useState('');
+  const [isAddingSubcontractor, setIsAddingSubcontractor] = useState(false);
+  const [addingSubcontractorRowIndex, setAddingSubcontractorRowIndex] = useState(null);
   const [formData, setFormData] = useState({
     site_id: '',
     date: new Date().toISOString().split('T')[0],
+    site_incharge: '',
     expenses: [
-      { type: 'STAFF PAYMENT', amount: '' },
-      { type: 'PARTY PAYMENT', amount: '' },
-      { type: 'Site expenses', amount: '' }
+      { type: 'STAFF PAYMENT', name: '', amount: '' },
+      { type: 'SUPPLIER PAYMENT', name: '', amount: '' },
+      { type: 'SITE EXPENSE', name: '', amount: '' }
     ],
     staff_attendance: [],
     subcontractors: [
-      { name: '', no_of_labour: '', work_details: '' }
+      { name: '', amount: '', work_details: '' }
     ],
     material_in: [
       { supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }
@@ -50,9 +60,13 @@ export default function DailyReport() {
             setFormData({
               site_id: r.site_id || '',
               date: r.date || new Date().toISOString().split('T')[0],
+              site_incharge: r.site_incharge || '',
               staff_attendance: r.staff ? r.staff.map(s => ({ staff_id: s.staff_id, name: s.name, status: s.status })) : [],
-              expenses: r.expenses && r.expenses.length > 0 ? r.expenses : [{ type: 'STAFF PAYMENT', amount: '' }, { type: 'PARTY PAYMENT', amount: '' }, { type: 'Site expenses', amount: '' }],
-              subcontractors: r.subcontractors && r.subcontractors.length > 0 ? r.subcontractors : [{ name: '', no_of_labour: '', work_details: '' }],
+              expenses: r.expenses && r.expenses.length > 0 ? r.expenses.map(e => ({
+                ...e, 
+                type: e.type === 'PARTY PAYMENT' ? 'SUPPLIER PAYMENT' : (e.type === 'Site expenses' ? 'SITE EXPENSE' : e.type)
+              })) : [{ type: 'STAFF PAYMENT', name: '', amount: '' }, { type: 'SUPPLIER PAYMENT', name: '', amount: '' }, { type: 'SITE EXPENSE', name: '', amount: '' }],
+              subcontractors: r.subcontractors && r.subcontractors.length > 0 ? r.subcontractors : [{ name: '', amount: '', work_details: '' }],
               material_in: data.material_in && data.material_in.length > 0 ? data.material_in.map(m => ({
                   supplier: m.supplier_id || '', material: m.material ? m.material.name : '', qnty: m.qnty, rate: m.rate, amount: m.amount, unit: m.unit || ''
               })) : [{ supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }],
@@ -76,15 +90,19 @@ export default function DailyReport() {
         const token = localStorage.getItem('admin_token');
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-        const [projRes, suppRes, matRes] = await Promise.all([
+        const [projRes, suppRes, matRes, inchargeRes, subRes] = await Promise.all([
           fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/materials`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${apiUrl}/materials`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/site-incharges`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/subcontractors`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (projRes.ok) setSites(await projRes.json());
         if (suppRes.ok) setSuppliers(await suppRes.json());
         if (matRes.ok) setMaterialsList(await matRes.json());
+        if (inchargeRes.ok) setSiteIncharges(await inchargeRes.json());
+        if (subRes.ok) setAllSubcontractors(await subRes.json());
 
       } catch (e) {
         console.error(e);
@@ -97,6 +115,12 @@ export default function DailyReport() {
   // Sync staff from selected site to attendance form
   useEffect(() => {
     const site = sites.find(s => s.id.toString() === formData.site_id.toString());
+    
+    // Set default site incharge if not already set by editing an existing report
+    if (site && site.site_incharge && !reportId) {
+      setFormData(prev => ({ ...prev, site_incharge: site.site_incharge.name }));
+    }
+
     if (site && site.site_staff && site.site_staff.length > 0) {
       // Check if we already populated this site's staff to avoid overriding user input
       const currentStaffIds = formData.staff_attendance.map(a => a.staff_id);
@@ -128,22 +152,21 @@ export default function DailyReport() {
           ...prev,
           subcontractors: site.site_subcontractors.map(sub => ({
             name: sub.name,
-            no_of_labour: '',
+            amount: '',
             work_details: ''
           }))
         }));
       }
     } else if (formData.subcontractors.length > 0 && formData.subcontractors[0].name !== '') {
-      setFormData(prev => ({ ...prev, subcontractors: [{ name: '', no_of_labour: '', work_details: '' }] }));
+      setFormData(prev => ({ ...prev, subcontractors: [{ name: '', amount: '', work_details: '' }] }));
     }
   }, [formData.site_id, sites]);
 
 
-    // Filter subcontractors by selected site's project
-  const currentSite = sites.find(s => s.id === parseInt(formData.site_id));
+    // Filter subcontractors by selected site
   const availableSubcontractorNames = Array.from(new Set(
     allSubcontractors
-      .filter(s => s.project && currentSite && s.project.id === currentSite.project_id)
+      .filter(s => String(s.site_id) === String(formData.site_id))
       .map(s => s.name)
       .filter(Boolean)
   ));
@@ -206,6 +229,62 @@ export default function DailyReport() {
     }
   };
 
+  const submitNewSubcontractor = async () => {
+    if (!newSubcontractorName.trim()) {
+      alert("Please enter a subcontractor name");
+      return;
+    }
+    
+    setIsAddingSubcontractor(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      
+      const res = await fetch(`${apiUrl}/subcontractors`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          site_id: formData.site_id,
+          date: formData.date,
+          name: newSubcontractorName,
+          amount: newSubcontractorAmount || 0,
+          work_details: newSubcontractorWork || ''
+        })
+      });
+
+      if (res.ok) {
+        const addedSub = await res.json();
+        
+        // Add to global list so it shows in dropdown
+        setAllSubcontractors(prev => [...prev, addedSub]);
+
+        // Auto-select it in the current row
+        if (addingSubcontractorRowIndex !== null) {
+          handleDynamicChange('subcontractors', addingSubcontractorRowIndex, 'name', addedSub.name);
+          handleDynamicChange('subcontractors', addingSubcontractorRowIndex, 'amount', addedSub.amount);
+          handleDynamicChange('subcontractors', addingSubcontractorRowIndex, 'work_details', addedSub.work_details);
+        }
+        
+        setIsSubcontractorModalOpen(false);
+        setNewSubcontractorName('');
+        setNewSubcontractorLabour('');
+        setNewSubcontractorWork('');
+        alert("Subcontractor added successfully!");
+      } else {
+        alert("Failed to add subcontractor.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred");
+    } finally {
+      setIsAddingSubcontractor(false);
+    }
+  };
+
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -229,7 +308,6 @@ export default function DailyReport() {
         },
         body: JSON.stringify({
           ...formData,
-          site_incharge: siteInchargeName,
           outstanding_balance: siteInchargeBalance // send the computed balance
         })
       });
@@ -267,6 +345,15 @@ export default function DailyReport() {
         newSection[index].balance = amount - paid;
     }
     
+    // Auto-fill subcontractor details
+    if (section === 'subcontractors' && field === 'name') {
+        const subData = allSubcontractors.find(s => s.name === value && String(s.site_id) === String(formData.site_id));
+        if (subData) {
+            newSection[index].amount = subData.amount || '';
+            newSection[index].work_details = subData.work_details || '';
+        }
+    }
+    
     setFormData({ ...formData, [section]: newSection });
   };
 
@@ -282,10 +369,10 @@ export default function DailyReport() {
 
   // Find selected site details
   const selectedSite = sites.find(s => s.id.toString() === formData.site_id.toString());
-  const siteInchargeName = selectedSite?.site_incharge?.name || 'Not Assigned';
   
   // Calculate real-time balance
-  const initialBalance = parseFloat(selectedSite?.site_incharge?.balance || 0);
+  const selectedInchargeData = siteIncharges.find(inc => inc.name === formData.site_incharge);
+  const initialBalance = parseFloat(selectedInchargeData?.balance || 0);
   const currentExpenses = formData.expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
   const currentMaterialPaid = formData.material_out.reduce((sum, item) => sum + (parseFloat(item.paid) || 0), 0);
   
@@ -332,7 +419,14 @@ export default function DailyReport() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Site Incharge</label>
-            <input type="text" readOnly value={siteInchargeName} className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-medium" />
+            <select 
+              value={formData.site_incharge} 
+              onChange={e => setFormData({...formData, site_incharge: e.target.value})}
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl"
+            >
+              <option value="">-- Choose Incharge --</option>
+              {siteIncharges.map(inc => <option key={inc.id} value={inc.name}>{inc.name}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Outstanding Balance</label>
@@ -342,12 +436,14 @@ export default function DailyReport() {
 
         
         {/* Staff Attendance */}
-        {formData.staff_attendance.length > 0 && (
-          <div className="mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
-            <div className="flex justify-between items-center mb-4">
+        <div className="mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Staff Attendance</h3>
             <button type="button" onClick={handleAddQuickStaff} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add Staff</button>
           </div>
+          {formData.staff_attendance.length === 0 ? (
+            <div className="text-sm text-gray-500 italic mt-2">No staff added yet. Click "Add Staff" to assign staff.</div>
+          ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {formData.staff_attendance.map((att, i) => (
                 <div key={att.staff_id} className="p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-between">
@@ -364,38 +460,69 @@ export default function DailyReport() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Expenses & Subcontractors */}
-        <div className="flex flex-col gap-8 mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
-          {/* Expenses */}
+        <div className="flex flex-col gap-6 mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
+          {/* STAFF PAYMENT */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Expenses</h3>
-              <button onClick={() => addRow('expenses', {type:'', amount:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">STAFF PAYMENT</h3>
+              <button onClick={() => addRow('expenses', {type:'STAFF PAYMENT', name:'', amount:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
             </div>
             <div className="space-y-3">
-              {formData.expenses.map((exp, i) => (
+              {formData.expenses.map((exp, i) => exp.type === 'STAFF PAYMENT' && (
                 <div key={i} className="flex gap-4 items-center">
-                  <div className="w-8 text-sm text-gray-400 font-mono shrink-0">{i + 1}.</div>
-                  <input 
-                    type="text" 
-                    placeholder="Expense Type"
-                    value={exp.type} 
-                    onChange={e => handleDynamicChange('expenses', i, 'type', e.target.value)} 
-                    className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" 
-                  />
-                  <input 
-                    type="number" 
-                    placeholder="Amount" 
-                    value={exp.amount} 
-                    onChange={e => handleDynamicChange('expenses', i, 'amount', e.target.value)} 
-                    className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" 
-                  />
-                  <button onClick={() => removeRow('expenses', i)} className="p-2 text-gray-400 hover:text-red-500 shrink-0">
-                    <Trash2 className="w-4 h-4"/>
-                  </button>
+                  <select value={exp.name || ''} onChange={e => handleDynamicChange('expenses', i, 'name', e.target.value)} className="w-full max-w-md px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                     <option value="">Select Staff</option>
+                     {formData.staff_attendance.map(s => {
+                       if (formData.expenses.some((e, idx) => e.type === 'STAFF PAYMENT' && e.name === s.name && idx !== i)) return null;
+                       return <option key={s.staff_id} value={s.name}>{s.name}</option>;
+                     })}
+                  </select>
+                  <input type="number" placeholder="Amount" value={exp.amount} onChange={e => handleDynamicChange('expenses', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <button onClick={() => removeRow('expenses', i)} className="p-2 text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4"/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SUPPLIER PAYMENT */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">SUPPLIER PAYMENT</h3>
+              <button onClick={() => addRow('expenses', {type:'SUPPLIER PAYMENT', name:'', amount:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
+            </div>
+            <div className="space-y-3">
+              {formData.expenses.map((exp, i) => (exp.type === 'SUPPLIER PAYMENT' || exp.type === 'PARTY PAYMENT') && (
+                <div key={i} className="flex gap-4 items-center">
+                  <select value={exp.name || ''} onChange={e => handleDynamicChange('expenses', i, 'name', e.target.value)} className="w-full max-w-md px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                     <option value="">Select Supplier</option>
+                     {suppliers.map(s => {
+                       if (formData.expenses.some((e, idx) => (e.type === 'SUPPLIER PAYMENT' || e.type === 'PARTY PAYMENT') && e.name === s.name && idx !== i)) return null;
+                       return <option key={s.id} value={s.name}>{s.name}</option>;
+                     })}
+                  </select>
+                  <input type="number" placeholder="Amount" value={exp.amount} onChange={e => handleDynamicChange('expenses', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <button onClick={() => removeRow('expenses', i)} className="p-2 text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4"/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SITE EXPENSES */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">SITE EXPENSES</h3>
+              <button onClick={() => addRow('expenses', {type:'SITE EXPENSE', name:'', amount:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
+            </div>
+            <div className="space-y-3">
+              {formData.expenses.map((exp, i) => (exp.type === 'SITE EXPENSE' || exp.type === 'Site expenses') && (
+                <div key={i} className="flex gap-4 items-center">
+                  <input type="text" placeholder="Expense Details" value={exp.name || ''} onChange={e => handleDynamicChange('expenses', i, 'name', e.target.value)} className="w-full max-w-md px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <input type="number" placeholder="Amount" value={exp.amount} onChange={e => handleDynamicChange('expenses', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <button onClick={() => removeRow('expenses', i)} className="p-2 text-gray-400 hover:text-red-500 shrink-0"><Trash2 className="w-4 h-4"/></button>
                 </div>
               ))}
             </div>
@@ -405,19 +532,23 @@ export default function DailyReport() {
           <div>
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Subcontract Labour</h3>
-                <button onClick={() => addRow('subcontractors', {name:'', no_of_labour:'', work_details:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
+                <button onClick={() => addRow('subcontractors', {name:'', amount:'', work_details:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add</button>
             </div>
             
             <div className="space-y-3">
               {formData.subcontractors.map((sub, i) => (
                 <div key={i} className="flex gap-3 items-start">
-                  <div>
-                    <input list={`sub-list-${i}`} placeholder="Name" value={sub.name} onChange={e => handleDynamicChange('subcontractors', i, 'name', e.target.value)} className="w-48 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
-                    <datalist id={`sub-list-${i}`}>
-                      {availableSubcontractorNames.map(name => <option key={name} value={name} />)}
-                    </datalist>
+                  <div className="flex gap-1">
+                    <select value={sub.name} onChange={e => handleDynamicChange('subcontractors', i, 'name', e.target.value)} className="w-48 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                      <option value="">Select Name</option>
+                      {availableSubcontractorNames.map(name => {
+                        if (formData.subcontractors.some((sub, idx) => sub.name === name && idx !== i)) return null;
+                        return <option key={name} value={name}>{name}</option>;
+                      })}
+                    </select>
+                    <button type="button" onClick={() => { setAddingSubcontractorRowIndex(i); setIsSubcontractorModalOpen(true); }} className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-lg leading-none" title="Add New Subcontractor">+</button>
                   </div>
-                  <input type="number" placeholder="Labour Count" value={sub.no_of_labour} onChange={e => handleDynamicChange('subcontractors', i, 'no_of_labour', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <input type="number" placeholder="Amount" value={sub.amount} onChange={e => handleDynamicChange('subcontractors', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="text" placeholder="Work Details" value={sub.work_details} onChange={e => handleDynamicChange('subcontractors', i, 'work_details', e.target.value)} className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <button onClick={() => removeRow('subcontractors', i)} className="p-2 text-gray-400 hover:text-red-500 mt-0.5"><Trash2 className="w-4 h-4"/></button>
                 </div>
@@ -570,6 +701,69 @@ export default function DailyReport() {
                 disabled={isAddingStaff || !newStaffName.trim()}
               >
                 {isAddingStaff ? 'Adding...' : 'Add Staff'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Subcontractor Modal */}
+      {isSubcontractorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add New Subcontractor</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcontractor Name *</label>
+                <input 
+                  type="text" 
+                  autoFocus
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Enter name..."
+                  value={newSubcontractorName}
+                  onChange={(e) => setNewSubcontractorName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                <input 
+                  type="number" 
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Enter labour count..."
+                  value={newSubcontractorAmount}
+                  onChange={(e) => setNewSubcontractorLabour(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Work Details</label>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="Enter work details..."
+                  value={newSubcontractorWork}
+                  onChange={(e) => setNewSubcontractorWork(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submitNewSubcontractor(); }}
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsSubcontractorModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                disabled={isAddingSubcontractor}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitNewSubcontractor}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-500/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isAddingSubcontractor || !newSubcontractorName.trim()}
+              >
+                {isAddingSubcontractor ? 'Adding...' : 'Add'}
               </button>
             </div>
           </div>

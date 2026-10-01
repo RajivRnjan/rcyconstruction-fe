@@ -102,7 +102,7 @@ export default function Subcontractor() {
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Source</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Subcontract Labour</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">No. of Labour</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 w-1/3">Work Details</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
               </tr>
@@ -123,7 +123,7 @@ export default function Subcontractor() {
                     <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded-md ${record.source === 'Daily Report' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{record.source || 'Standalone'}</span></td>
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{record.name}</td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.no_of_labour}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.amount}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={record.work_details}>{record.work_details || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">

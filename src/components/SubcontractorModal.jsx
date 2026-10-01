@@ -12,7 +12,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
     date: '',
     site_id: '',
     name: '',
-    no_of_labour: '',
+    amount: '',
     work_details: ''
   });
 
@@ -41,7 +41,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
           date: initialData.date || '',
           site_id: initialData.site_id || '',
           name: initialData.name || '',
-          no_of_labour: initialData.no_of_labour || '',
+          amount: initialData.amount || '',
           work_details: initialData.work_details || ''
         });
       } else {
@@ -49,7 +49,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
           date: new Date().toISOString().split('T')[0],
           site_id: '',
           name: '',
-          no_of_labour: '',
+          amount: '',
           work_details: ''
         });
       }
@@ -170,12 +170,12 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">No. of Labour</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
               <input
                 type="number"
-                name="no_of_labour"
+                name="amount"
                 disabled={isView}
-                value={formData.no_of_labour}
+                value={formData.amount}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
                 placeholder="Enter count"
