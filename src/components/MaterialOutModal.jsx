@@ -6,14 +6,14 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [projects, setProjects] = useState([]);
+  const [sites, setSites] = useState([]);
   const [expensesHeads, setExpensesHeads] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [materials, setMaterials] = useState([]);
   
   const [formData, setFormData] = useState({
     date: '',
-    project_id: '',
+    site_id: '',
     expenses_head_id: '',
     supplier_id: '',
     material_id: '',
@@ -32,14 +32,14 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const [projRes, expRes, supRes, matRes] = await Promise.all([
-            fetch(`${apiUrl}/master-sheets`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          const [siteRes, expRes, supRes, matRes] = await Promise.all([
+            fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${apiUrl}/expenses-heads`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${apiUrl}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${apiUrl}/materials`, { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
           
-          if (projRes.ok) setProjects(await projRes.json());
+          if (siteRes.ok) setSites(await siteRes.json());
           if (expRes.ok) setExpensesHeads(await expRes.json());
           if (supRes.ok) setSuppliers(await supRes.json());
           if (matRes.ok) setMaterials(await matRes.json());
@@ -56,7 +56,7 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
       if (initialData && (mode === 'edit' || mode === 'view')) {
         setFormData({
           date: initialData.date || '',
-          project_id: initialData.project_id || '',
+          site_id: initialData.site_id || '',
           expenses_head_id: initialData.expenses_head_id || '',
           supplier_id: initialData.supplier_id || '',
           material_id: initialData.material_id || '',
@@ -69,7 +69,7 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
       } else {
         setFormData({
           date: new Date().toISOString().split('T')[0],
-          project_id: '',
+          site_id: '',
           expenses_head_id: '',
           supplier_id: '',
           material_id: '',
@@ -192,15 +192,15 @@ export default function MaterialOutModal({ isOpen, onClose, onSuccess, initialDa
             </div>
 
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Name *</label>
               <SearchableSelect
-                name="project_id"
+                name="site_id"
                 required={true}
                 disabled={isView}
-                value={formData.project_id}
-                onChange={(val) => setFormData({ ...formData, project_id: val })}
-                options={projects.map(p => ({ value: p.id, label: p.project_name }))}
-                placeholder="Select Project"
+                value={formData.site_id}
+                onChange={(val) => setFormData({ ...formData, site_id: val })}
+                options={sites.map(p => ({ value: p.id, label: p.name }))}
+                placeholder="Select Site"
               />
             </div>
 

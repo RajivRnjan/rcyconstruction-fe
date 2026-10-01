@@ -82,7 +82,7 @@ export default function MaterialOut() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">MATERIAL OUT</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage outgoing materials and project expenses</p>
+          <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage outgoing materials and site expenses</p>
         </div>
         <button 
           onClick={() => handleOpenModal('create')}
@@ -99,7 +99,7 @@ export default function MaterialOut() {
             <thead className="bg-gray-50 dark:bg-gray-950/50 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
               <tr>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Project</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Material</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Qnty</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
@@ -121,7 +121,7 @@ export default function MaterialOut() {
                 records.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.date || '-'}</td>
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white max-w-[150px] truncate">{record.project?.project_name || '-'}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.material?.name || '-'} <span className="uppercase text-xs ml-1 opacity-60">({record.unit || record.material?.unit})</span></td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.qnty}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">₹{record.amount}</td>

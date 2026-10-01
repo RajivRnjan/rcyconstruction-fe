@@ -9,8 +9,9 @@ export default function SupplierModal({ isOpen, onClose, onSuccess, initialData 
     name: '',
     contact_number: '',
     gst_number: '',
-    address: ''
-  });
+    address: '',
+          outstanding_amount: ''
+        });
 
   useEffect(() => {
     if (isOpen) {
@@ -19,14 +20,16 @@ export default function SupplierModal({ isOpen, onClose, onSuccess, initialData 
           name: initialData.name || '',
           contact_number: initialData.contact_number || '',
           gst_number: initialData.gst_number || '',
-          address: initialData.address || ''
+          address: initialData.address || '',
+          outstanding_amount: initialData.outstanding_amount || ''
         });
       } else {
         setFormData({
           name: '',
           contact_number: '',
           gst_number: '',
-          address: ''
+          address: '',
+          outstanding_amount: ''
         });
       }
       setError('');
@@ -153,6 +156,20 @@ export default function SupplierModal({ isOpen, onClose, onSuccess, initialData 
             />
           </div>
 
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Outstanding Amount</label>
+            <input
+              type="number"
+              name="outstanding_amount"
+              step="0.01"
+              disabled={isView}
+              value={formData.outstanding_amount}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
+              placeholder="0.00"
+            />
+          </div>
           <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
             <button 
               type="button" 

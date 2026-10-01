@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Calculator } from 'lucide-react';
 import SearchableSelect from './SearchableSelect';
 
@@ -6,11 +7,11 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [projects, setProjects] = useState([]);
+  const [sites, setSites] = useState([]);
   
   const [formData, setFormData] = useState({
     date: '',
-    project_id: '',
+    
     name: '',
     opening_bal: '',
     credit: '',
@@ -26,8 +27,8 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const projRes = await fetch(`${apiUrl}/master-sheets`, { headers: { 'Authorization': `Bearer ${token}` } });
-          if (projRes.ok) setProjects(await projRes.json());
+          const siteRes = await fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (siteRes.ok) setSites(await siteRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);
         }
@@ -41,7 +42,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
       if (initialData && (mode === 'edit' || mode === 'view')) {
         setFormData({
           date: initialData.date || '',
-          project_id: initialData.project_id || '',
+          
           name: initialData.name || '',
           opening_bal: initialData.opening_bal || '',
           credit: initialData.credit || '',
@@ -51,7 +52,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
       } else {
         setFormData({
           date: new Date().toISOString().split('T')[0],
-          project_id: '',
+          site_id: initialData?.site_id || '',
           name: '',
           opening_bal: '',
           credit: '',
@@ -117,8 +118,10 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-colors duration-300" onClick={onClose}>
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 transition-colors duration-300" onClick={onClose}>
       <div 
         className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar relative transition-colors duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -154,18 +157,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name *</label>
-              <SearchableSelect
-                name="project_id"
-                required={true}
-                disabled={isView}
-                value={formData.project_id}
-                onChange={(val) => setFormData({ ...formData, project_id: val })}
-                options={projects.map(p => ({ value: p.id, label: p.project_name }))}
-                placeholder="Select Project"
-              />
-            </div>
+            
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Incharge Name *</label>
@@ -275,6 +267,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -6,7 +6,7 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [projects, setProjects] = useState([]);
+  const [sites, setSites] = useState([]);
   const [accounts, setAccounts] = useState([]);
   
   const paymentModes = [
@@ -19,7 +19,7 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
 
   const [formData, setFormData] = useState({
     date: '',
-    project_id: '',
+    site_id: '',
     client_name: '',
     mode_of_payment: '',
     account_id: '',
@@ -34,12 +34,12 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const [projRes, accRes] = await Promise.all([
-            fetch(`${apiUrl}/master-sheets`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          const [siteRes, accRes] = await Promise.all([
+            fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${apiUrl}/accounts`, { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
           
-          if (projRes.ok) setProjects(await projRes.json());
+          if (siteRes.ok) setSites(await siteRes.json());
           if (accRes.ok) setAccounts(await accRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);
@@ -54,7 +54,7 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
       if (initialData && (mode === 'edit' || mode === 'view')) {
         setFormData({
           date: initialData.date || '',
-          project_id: initialData.project_id || '',
+          site_id: initialData.site_id || '',
           client_name: initialData.client_name || '',
           mode_of_payment: initialData.mode_of_payment || '',
           account_id: initialData.account_id || '',
@@ -64,7 +64,7 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
       } else {
         setFormData({
           date: new Date().toISOString().split('T')[0],
-          project_id: '',
+          site_id: '',
           client_name: '',
           mode_of_payment: '',
           account_id: '',
@@ -161,15 +161,15 @@ export default function HeadOfficeIncomeModal({ isOpen, onClose, onSuccess, init
             </div>
 
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Name *</label>
               <SearchableSelect
-                name="project_id"
+                name="site_id"
                 required={true}
                 disabled={isView}
-                value={formData.project_id}
-                onChange={(val) => setFormData({ ...formData, project_id: val })}
-                options={projects.map(p => ({ value: p.id, label: p.project_name }))}
-                placeholder="Select Project"
+                value={formData.site_id}
+                onChange={(val) => setFormData({ ...formData, site_id: val })}
+                options={sites.map(p => ({ value: p.id, label: p.name }))}
+                placeholder="Select Site"
               />
             </div>
 

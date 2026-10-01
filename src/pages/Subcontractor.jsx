@@ -99,7 +99,8 @@ export default function Subcontractor() {
             <thead className="bg-gray-50 dark:bg-gray-950/50 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
               <tr>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Project</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Source</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Subcontract Labour</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">No. of Labour</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 w-1/3">Work Details</th>
@@ -109,31 +110,38 @@ export default function Subcontractor() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800 transition-colors duration-300">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                  <td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No records found.</td>
+                  <td colSpan="7" className="px-6 py-8 text-center text-gray-500">No records found.</td>
                 </tr>
               ) : (
                 records.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.date || '-'}</td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.project?.project_name || '-'}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
+                    <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded-md ${record.source === 'Daily Report' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{record.source || 'Standalone'}</span></td>
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{record.name}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.no_of_labour}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={record.work_details}>{record.work_details || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">
-                        <button onClick={() => handleOpenModal('view', record)} className="text-gray-400 hover:text-blue-600 transition-colors" title="View">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleOpenModal('edit', record)} className="text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(record.id)} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {record.source === 'Daily Report' ? (
+                          <span className="text-xs text-gray-400 italic">Edit in Daily Report</span>
+                        ) : (
+                          <>
+                            <button onClick={() => handleOpenModal('view', record)} className="text-gray-400 hover:text-blue-600 transition-colors" title="View">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleOpenModal('edit', record)} className="text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(record.id)} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

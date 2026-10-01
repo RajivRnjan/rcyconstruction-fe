@@ -20,41 +20,54 @@ import {
   Lock,
   Sun,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  FileText
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const navItems = [
-  { name: 'Master Sheet', path: '/', icon: LayoutDashboard },
-  { name: 'Account', path: '/account', icon: Wallet },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+
+  { 
+    name: 'Site', 
+    icon: Building2,
+    subItems: [
+      { name: 'All Sites', path: '/sites' },
+      { name: 'Add Site', path: '/add-site' },
+      { name: 'Site Incharge', path: '/incharge' }]
+  },
+  { 
+    name: 'Daily Reports', 
+    icon: FileText,
+    subItems: [
+      { name: 'Add Report', path: '/daily-report' },
+      { name: 'Reports List', path: '/daily-reports-list' }]
+  },
   { name: 'Staff Salary', path: '/salary', icon: Users },
   { 
     name: 'Head Office', 
     icon: Building2,
     subItems: [
       { name: 'Income', path: '/head-office/income' },
-      { name: 'Expense', path: '/head-office/expense' },
-    ]
+      { name: 'Expense', path: '/head-office/expense' }]
   },
-  { name: 'Site Incharge', path: '/incharge', icon: UserCircle },
+  
+  
   { name: 'Supplier', path: '/suppliers', icon: Truck },
   { 
     name: 'Material', 
     icon: Package,
     subItems: [
       { name: 'Materials List', path: '/material' },
-      { name: 'Material In', path: '/material-in' },
-      { name: 'Material Out', path: '/material-out' },
-    ]
+      
+      ]
   },
-  { name: 'Staff Attendance', path: '/attendance', icon: CalendarClock },
-  { name: 'Subcontractor', path: '/subcontractor', icon: HardHat },
-];
+  { name: 'Subcontractor', path: '/subcontractor', icon: HardHat }];
 
 export default function DashboardLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openMenus, setOpenMenus] = useState(['Material']);
+  const [openMenus, setOpenMenus] = useState([]);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -72,8 +85,8 @@ export default function DashboardLayout() {
     if (isSidebarCollapsed) setIsSidebarCollapsed(false);
     setOpenMenus(prev => 
       prev.includes(menuName) 
-        ? prev.filter(item => item !== menuName)
-        : [...prev, menuName]
+        ? []
+        : [menuName]
     );
   };
 

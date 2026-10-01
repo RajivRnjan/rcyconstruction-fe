@@ -14,6 +14,10 @@ import SiteIncharge from './pages/SiteIncharge';
 import HeadOfficeIncome from './pages/HeadOfficeIncome';
 import HeadOfficeExpense from './pages/HeadOfficeExpense';
 import ComingSoon from './pages/ComingSoon';
+import Sites from './pages/Sites';
+import AddSite from './pages/AddSite';
+import DailyReport from './pages/DailyReport';
+import DailyReportsList from './pages/DailyReportsList';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -28,8 +32,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
-              <Route path="account" element={<Account />} />
-              <Route path="salary" element={<Salary />} />
+                                          <Route path="salary" element={<Salary />} />
               <Route path="suppliers" element={<Supplier />} />
               <Route path="material" element={<Material />} />
               <Route path="expenses" element={<ExpensesHead />} />
@@ -42,7 +45,10 @@ function App() {
               
               {/* Coming Soon Routes */}
               <Route path="incharge" element={<SiteIncharge />} />
-              <Route path="attendance" element={<ComingSoon title="Staff Attendance" />} />
+              <Route path="sites" element={<Sites />} />
+              <Route path="add-site" element={<AddSite />} />
+              <Route path="daily-report" element={<DailyReport />} />
+              <Route path="daily-reports-list" element={<DailyReportsList />} />
               <Route path="subcontractor" element={<Subcontractor />} />
 
               {/* 404 Route */}

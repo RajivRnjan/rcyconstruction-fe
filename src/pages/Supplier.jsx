@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import SupplierModal from '../components/SupplierModal';
+import SupplierTransactionModal from '../components/SupplierTransactionModal';
 
 export default function Supplier() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
@@ -145,6 +147,12 @@ export default function Supplier() {
         </div>
       </div>
 
+
+      <SupplierTransactionModal
+        isOpen={isLedgerModalOpen}
+        onClose={() => { setIsLedgerModalOpen(false); fetchSuppliers(); }}
+        supplier={selectedRecord}
+      />
       <SupplierModal 
         isOpen={isModalOpen} 
         onClose={handleCloseModal} 

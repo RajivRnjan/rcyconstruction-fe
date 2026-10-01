@@ -99,7 +99,7 @@ export default function HeadOfficeExpense() {
             <thead className="bg-gray-50 dark:bg-gray-950/50 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
               <tr>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Project Name</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Name</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Expenses Head</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Supplier Name</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Mode of Payment</th>
@@ -121,7 +121,7 @@ export default function HeadOfficeExpense() {
                 records.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.date || '-'}</td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.project?.project_name || '-'}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.expenses_head || '-'}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.supplier?.name || '-'}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.mode_of_payment || '-'}</td>

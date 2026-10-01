@@ -6,11 +6,11 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [projects, setProjects] = useState([]);
+  const [sites, setSites] = useState([]);
   
   const [formData, setFormData] = useState({
     date: '',
-    project_id: '',
+    site_id: '',
     name: '',
     no_of_labour: '',
     work_details: ''
@@ -24,8 +24,8 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         try {
-          const projRes = await fetch(`${apiUrl}/master-sheets`, { headers: { 'Authorization': `Bearer ${token}` } });
-          if (projRes.ok) setProjects(await projRes.json());
+          const siteRes = await fetch(`${apiUrl}/sites`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (siteRes.ok) setSites(await siteRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);
         }
@@ -39,7 +39,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
       if (initialData && (mode === 'edit' || mode === 'view')) {
         setFormData({
           date: initialData.date || '',
-          project_id: initialData.project_id || '',
+          site_id: initialData.site_id || '',
           name: initialData.name || '',
           no_of_labour: initialData.no_of_labour || '',
           work_details: initialData.work_details || ''
@@ -47,7 +47,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
       } else {
         setFormData({
           date: new Date().toISOString().split('T')[0],
-          project_id: '',
+          site_id: '',
           name: '',
           no_of_labour: '',
           work_details: ''
@@ -143,15 +143,15 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Name *</label>
               <SearchableSelect
-                name="project_id"
+                name="site_id"
                 required={true}
                 disabled={isView}
-                value={formData.project_id}
-                onChange={(val) => setFormData({ ...formData, project_id: val })}
-                options={projects.map(p => ({ value: p.id, label: p.project_name }))}
-                placeholder="Select Project"
+                value={formData.site_id}
+                onChange={(val) => setFormData({ ...formData, site_id: val })}
+                options={sites.map(p => ({ value: p.id, label: p.name }))}
+                placeholder="Select Site"
               />
             </div>
 
