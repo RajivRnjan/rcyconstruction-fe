@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Pagination from '../components/Pagination';
 
 const DailyReportsList = () => {
+    const confirm = useConfirm();
     const [reports, setReports] = useState([]);
     
     const [sites, setSites] = useState([]);

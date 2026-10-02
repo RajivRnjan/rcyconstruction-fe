@@ -233,17 +233,19 @@ export default function Supplier() {
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">GST Number</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Address</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Total Paid</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Payable Amount</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Balance Amount</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800 transition-colors duration-300">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                  <td colSpan="8" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : suppliers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No records found. Click "Add Supplier" to create one.</td>
+                  <td colSpan="8" className="px-6 py-8 text-center text-gray-500">No records found. Click "Add Supplier" to create one.</td>
                 </tr>
               ) : (
                 suppliers.map((record) => (
@@ -259,6 +261,12 @@ export default function Supplier() {
                               <CalendarIcon className="w-4 h-4" />
                           </button>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">₹{parseFloat(record.total_payable || 0).toLocaleString()}</span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`font-bold ${parseFloat(record.balance_amount || 0) > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>₹{parseFloat(record.balance_amount || 0).toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">

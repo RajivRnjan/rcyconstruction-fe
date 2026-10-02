@@ -61,7 +61,7 @@ const navItems = [
     icon: Package,
     subItems: [
       { name: 'Materials List', path: '/material' },
-      
+      { name: 'Material Stock', path: '/material-stock' },
       ]
   },
   { name: 'Subcontractor', path: '/subcontractor', icon: HardHat }];

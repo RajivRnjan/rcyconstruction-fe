@@ -296,8 +296,8 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
 
             
           </div>
-          {/* Staff Section */}
-          <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
+          {/* Staff Section - hidden in create mode */}
+          {mode !== 'create' && <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Site Staff</h3>
               {!isView && (
@@ -337,9 +337,9 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
                 </tbody>
               </table>
             </div>
-          </div>
-          {/* Subcontractors Section */}
-          <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
+          </div>}
+          {/* Subcontractors Section - hidden in create mode */}
+          {mode !== 'create' && <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Site Subcontractors</h3>
               {!isView && (
@@ -381,7 +381,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
                 </tbody>
               </table>
             </div>
-          </div>
+          </div>}
 
           {/* BOQ Items Section */}
           <div className="pt-6 border-t border-gray-200 dark:border-gray-800">

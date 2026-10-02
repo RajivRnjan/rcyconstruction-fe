@@ -44,8 +44,11 @@ export default function DailyReport() {
     material_in: [
       { supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }
     ],
-    material_out: [
-      { expense_head: '', supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '', paid: '', balance: '', remark: '' }
+    material_used: [
+      { material: '', unit: '', qnty: '', remark: '' }
+    ],
+    material_transfer: [
+      { to_site: '', material: '', unit: '', qnty: '', remark: '' }
     ]
   });
 
@@ -76,9 +79,12 @@ export default function DailyReport() {
               material_in: data.material_in && data.material_in.length > 0 ? data.material_in.map(m => ({
                   supplier: m.supplier_id || '', material: m.material ? m.material.name : '', qnty: m.qnty, rate: m.rate, amount: m.amount, unit: m.unit || ''
               })) : [{ supplier: '', material: '', unit: '', qnty: '', rate: '', amount: '' }],
-              material_out: data.material_out && data.material_out.length > 0 ? data.material_out.map(m => ({
-                  expense_head: m.expensesHead ? m.expensesHead.name : '', supplier: m.supplier_id || '', material: m.material ? m.material.name : '', qnty: m.qnty, rate: m.rate, amount: m.amount, paid: m.paid, balance: m.balance, remark: m.remark || ''
-              })) : [{ expense_head: '', supplier: '', material: '', qnty: '', rate: '', amount: '', paid: '', balance: '', remark: '' }]
+              material_used: data.material_used && data.material_used.length > 0 ? data.material_used.map(m => ({
+                  material: m.material ? m.material.name : '', unit: m.unit || '', qnty: m.qnty, remark: m.remark || ''
+              })) : [{ material: '', unit: '', qnty: '', remark: '' }],
+              material_transfer: data.material_transfer && data.material_transfer.length > 0 ? data.material_transfer.map(m => ({
+                  to_site: m.to_site_id || '', material: m.material ? m.material.name : '', unit: m.unit || '', qnty: m.qnty, remark: m.remark || ''
+              })) : [{ to_site: '', material: '', unit: '', qnty: '', remark: '' }]
             });
           }
         } catch (e) {
@@ -360,7 +366,8 @@ export default function DailyReport() {
         },
         body: JSON.stringify({
           ...formData,
-          outstanding_balance: siteInchargeBalance // send the computed balance
+          outstanding_balance: siteInchargeBalance, // send the computed balance
+          report_id: reportId || null // send id when editing so BE updates in place
         })
       });
 
@@ -384,14 +391,14 @@ export default function DailyReport() {
     newSection[index][field] = value;
     
     // Auto-calculate amount for materials
-    if ((section === 'material_in' || section === 'material_out') && (field === 'qnty' || field === 'rate')) {
+    if ((section === 'material_in' || section === 'material_out' || section === 'material_used') && (field === 'qnty' || field === 'rate')) {
         const qnty = parseFloat(newSection[index].qnty) || 0;
         const rate = parseFloat(newSection[index].rate) || 0;
         newSection[index].amount = qnty * rate;
     }
     
     // Auto-calculate balance for material out
-    if (section === 'material_out' && (field === 'qnty' || field === 'rate' || field === 'paid')) {
+    if (false && section === 'material_out' && (field === 'qnty' || field === 'rate' || field === 'paid')) {
         const amount = parseFloat(newSection[index].amount) || 0;
         const paid = parseFloat(newSection[index].paid) || 0;
         newSection[index].balance = amount - paid;
@@ -426,11 +433,12 @@ export default function DailyReport() {
   const selectedInchargeData = siteIncharges.find(inc => inc.name === formData.site_incharge);
   const initialBalance = parseFloat(selectedInchargeData?.balance || 0);
   const currentExpenses = formData.expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
-  const currentMaterialPaid = formData.material_out.reduce((sum, item) => sum + (parseFloat(item.paid) || 0), 0);
+  const currentMaterialPaid = 0; // material_used/transfer don't track payments here
   
   const siteInchargeBalance = initialBalance - currentExpenses - currentMaterialPaid;
 
 
+  console.log('DEBUG formData:', formData);
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div className="flex justify-between items-center">
@@ -661,50 +669,84 @@ export default function DailyReport() {
             </div>
         </div>
 
-        {/* Material Out */}
+        {/* Material Used */}
         <div className="border-t border-gray-100 dark:border-gray-800 pt-8">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Material OUT</h3>
-                <button onClick={() => addRow('material_out', {expense_head:'', supplier:'', material:'', unit:'', qnty:'', rate:'', amount:'', paid:'', balance:'', remark:''})} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add Material Out</button>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Material Used</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Items consumed on site today</p>
+                </div>
+                <button onClick={() => addRow('material_used', {material:'', unit:'', qnty:'', remark:''})} className="text-orange-600 hover:text-orange-700 text-xs flex items-center gap-1 font-medium bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-lg"><Plus className="w-3 h-3"/> Add Material Used</button>
             </div>
             <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl">
                 <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500">
+                    <thead className="bg-orange-50/50 dark:bg-orange-900/10 border-b border-gray-200 dark:border-gray-800 text-gray-500">
                         <tr>
-                            <th className="px-4 py-3 font-medium">Sl.no</th>
-                            <th className="px-4 py-3 font-medium">Expense Head</th>
-                            <th className="px-4 py-3 font-medium">Supplier</th>
+                            <th className="px-4 py-3 font-medium">#</th>
                             <th className="px-4 py-3 font-medium">Material</th>
-                            <th className="px-4 py-3 font-medium text-right">Qnty</th>
-                            <th className="px-4 py-3 font-medium text-right">Rate</th>
-                            <th className="px-4 py-3 font-medium text-right">Amount</th>
-                            <th className="px-4 py-3 font-medium text-right">Paid</th>
-                            <th className="px-4 py-3 font-medium text-right">Balance</th>
+                            <th className="px-4 py-3 font-medium">Unit</th>
+                            <th className="px-4 py-3 font-medium text-right">Qty</th>
                             <th className="px-4 py-3 font-medium">Remark</th>
                             <th className="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {formData.material_out.map((item, i) => (
+                        {(formData.material_used || []).map((item, i) => (
                             <tr key={i}>
                                 <td className="px-4 py-2 text-gray-400">{i+1}</td>
-                                <td className="px-4 py-2"><input type="text" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.expense_head} onChange={e => handleDynamicChange('material_out', i, 'expense_head', e.target.value)} /></td>
                                 <td className="px-4 py-2">
-  <select className="w-28 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.supplier} onChange={e => handleDynamicChange('material_out', i, 'supplier', e.target.value)}>
-    <option value="">Select Supplier</option>
-    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-  </select>
-</td>
+                                  <input list="materials-list" type="text" placeholder="Type or select..." className="w-36 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.material} onChange={e => handleDynamicChange('material_used', i, 'material', e.target.value)} />
+                                </td>
+                                <td className="px-4 py-2"><input type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_used', i, 'unit', e.target.value)} /></td>
+                                <td className="px-4 py-2 text-right"><input type="number" placeholder="0" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_used', i, 'qnty', e.target.value)} /></td>
+                                <td className="px-4 py-2"><input type="text" placeholder="Optional..." className="w-32 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.remark} onChange={e => handleDynamicChange('material_used', i, 'remark', e.target.value)} /></td>
+                                <td className="px-4 py-2"><button onClick={() => removeRow('material_used', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {/* Material Transfer */}
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-8">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Material Transfer</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Transfer material to another site — will appear in that site's stock</p>
+                </div>
+                <button onClick={() => addRow('material_transfer', {to_site:'', material:'', unit:'', qnty:'', remark:''})} className="text-purple-600 hover:text-purple-700 text-xs flex items-center gap-1 font-medium bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-lg"><Plus className="w-3 h-3"/> Add Transfer</button>
+            </div>
+            <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-purple-50/50 dark:bg-purple-900/10 border-b border-gray-200 dark:border-gray-800 text-gray-500">
+                        <tr>
+                            <th className="px-4 py-3 font-medium">#</th>
+                            <th className="px-4 py-3 font-medium">To Site</th>
+                            <th className="px-4 py-3 font-medium">Material</th>
+                            <th className="px-4 py-3 font-medium">Unit</th>
+                            <th className="px-4 py-3 font-medium text-right">Qty</th>
+                            <th className="px-4 py-3 font-medium">Remark</th>
+                            <th className="px-4 py-3 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {(formData.material_transfer || []).map((item, i) => (
+                            <tr key={i}>
+                                <td className="px-4 py-2 text-gray-400">{i+1}</td>
                                 <td className="px-4 py-2">
-  <input list="materials-list" type="text" placeholder="Type..." className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.material} onChange={e => handleDynamicChange('material_out', i, 'material', e.target.value)} />
-</td>
-                                <td className="px-4 py-2"><input type="number" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_out', i, 'qnty', e.target.value)} /></td>
-                                <td className="px-4 py-2"><input type="number" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.rate} onChange={e => handleDynamicChange('material_out', i, 'rate', e.target.value)} /></td>
-                                <td className="px-4 py-2 text-right font-mono">{item.amount || 0}</td>
-                                <td className="px-4 py-2"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.paid} onChange={e => handleDynamicChange('material_out', i, 'paid', e.target.value)} /></td>
-                                <td className="px-4 py-2 text-right font-mono text-amber-600">{item.balance || 0}</td>
-                                <td className="px-4 py-2"><input type="text" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.remark} onChange={e => handleDynamicChange('material_out', i, 'remark', e.target.value)} /></td>
-                                <td className="px-4 py-2"><button onClick={() => removeRow('material_out', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
+                                  <select className="w-36 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.to_site} onChange={e => handleDynamicChange('material_transfer', i, 'to_site', e.target.value)}>
+                                    <option value="">Select Site</option>
+                                    {sites.filter(s => String(s.id) !== String(formData.site_id)).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                  </select>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <input list="materials-list" type="text" placeholder="Type or select..." className="w-36 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.material} onChange={e => handleDynamicChange('material_transfer', i, 'material', e.target.value)} />
+                                </td>
+                                <td className="px-4 py-2"><input type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_transfer', i, 'unit', e.target.value)} /></td>
+                                <td className="px-4 py-2 text-right"><input type="number" placeholder="0" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_transfer', i, 'qnty', e.target.value)} /></td>
+                                <td className="px-4 py-2"><input type="text" placeholder="Optional..." className="w-32 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.remark} onChange={e => handleDynamicChange('material_transfer', i, 'remark', e.target.value)} /></td>
+                                <td className="px-4 py-2"><button onClick={() => removeRow('material_transfer', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
                             </tr>
                         ))}
                     </tbody>

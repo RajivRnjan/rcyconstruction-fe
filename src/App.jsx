@@ -9,6 +9,7 @@ import Material from './pages/Material';
 import ExpensesHead from './pages/ExpensesHead';
 import MaterialIn from './pages/MaterialIn';
 import MaterialOut from './pages/MaterialOut';
+import MaterialStock from './pages/MaterialStock';
 import Subcontractor from './pages/Subcontractor';
 import SiteIncharge from './pages/SiteIncharge';
 import HeadOfficeIncome from './pages/HeadOfficeIncome';
@@ -73,6 +74,7 @@ function App() {
               <Route path="expenses" element={<ExpensesHead />} />
               <Route path="material-in" element={<MaterialIn />} />
               <Route path="material-out" element={<MaterialOut />} />
+              <Route path="material-stock" element={<MaterialStock />} />
               
               {/* Head Office Routes */}
               <Route path="head-office/income" element={<HeadOfficeIncome />} />
