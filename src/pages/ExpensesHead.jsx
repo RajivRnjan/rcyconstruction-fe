@@ -87,10 +87,6 @@ export default function ExpensesHead() {
     <div className="space-y-6 animate-in fade-in duration-500">
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">EXPENSES HEAD</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage expenses categories</p>
-        </div>
         <button 
           onClick={() => handleOpenModal('create')}
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20"

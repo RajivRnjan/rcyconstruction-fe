@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -73,6 +73,35 @@ export default function DashboardLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   
+  const location = useLocation();
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/') return { title: 'Dashboard', desc: 'Welcome back, Admin' };
+    if (path === '/sites') return { title: 'All Sites', desc: 'Manage all construction sites' };
+    if (path === '/add-site') return { title: 'Add Site', desc: 'Register a new construction site' };
+    if (path === '/incharge') return { title: 'Site Incharge', desc: 'Manage site incharge balances and expenses' };
+    if (path === '/daily-reports/list') return { title: 'Daily Reports', desc: 'View and manage all daily reports' };
+    if (path === '/daily-reports/create') return { title: 'Create Report', desc: 'Create a new daily report' };
+    if (path === '/staff-salary') return { title: 'Staff Salary', desc: 'Manage staff salaries and attendance' };
+    if (path === '/accounts') return { title: 'Accounts', desc: 'Manage company accounts and transactions' };
+    if (path === '/head-office/income') return { title: 'Head Office Income', desc: 'Manage head office income' };
+    if (path === '/head-office/expense') return { title: 'Head Office Expense', desc: 'Manage head office expenses' };
+    if (path === '/suppliers') return { title: 'Suppliers', desc: 'Manage supplier details' };
+    if (path === '/material') return { title: 'Materials List', desc: 'Manage all materials' };
+    if (path === '/material-stock') return { title: 'Material Stock', desc: 'All material IN entries from daily reports' };
+    if (path === '/subcontractor') return { title: 'Subcontractor', desc: 'Manage subcontract labour and work details' };
+    
+    // Default fallback
+    const routeName = path.split('/').pop().replace('-', ' ');
+    return { 
+      title: routeName.charAt(0).toUpperCase() + routeName.slice(1) || 'Dashboard', 
+      desc: 'RCY Construction Management' 
+    };
+  };
+
+  const pageInfo = getPageTitle();
+
+
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
@@ -315,8 +344,8 @@ export default function DashboardLayout() {
       <main className="flex-1 flex flex-col min-w-0 pt-16 md:pt-0 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
         <header className="hidden md:flex h-20 items-center justify-between px-8 border-b border-gray-200 dark:border-gray-900/50 bg-white/80 dark:bg-gray-950/50 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-300">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
-            <p className="text-sm text-gray-500">Welcome back, Admin</p>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">{pageInfo.title}</h1>
+            <p className="text-sm text-gray-500">{pageInfo.desc}</p>
           </div>
           <div className="flex items-center gap-6">
             

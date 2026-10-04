@@ -1,4 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Download } from 'lucide-react';
 import { Package, Search, Building2, IndianRupee, Layers, ChevronDown, ChevronUp,
          ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -71,7 +75,63 @@ export default function MaterialStock() {
     }
   };
 
-  useEffect(() => { fetchStock(); }, []);
+  
+  const handleExport = async (type) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      
+      const res = await fetch(`${apiUrl}/material-stock`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch data");
+      const data = await res.json();
+      
+      const flatData = [];
+      data.forEach(site => {
+          site.entries.forEach(entry => {
+              flatData.push({
+                  Site: site.site_name,
+                  Date: entry.date,
+                  Material: entry.material?.name || '-',
+                  Supplier: entry.supplier?.name || '-',
+                  Unit: entry.unit || '-',
+                  Qty: entry.qnty || 0,
+                  Rate: entry.rate || 0,
+                  Amount: entry.amount || 0
+              });
+          });
+      });
+
+      // Also apply search/filter locally for export to match current view
+      const finalData = flatData.filter(e => {
+          let matchSite = activeSite === '' || e.Site === sites.find(s => String(s.site_id) === String(activeSite))?.site_name;
+          let matchSearch = !searchQuery || 
+              (e.Material.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               e.Supplier.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               e.Date.includes(searchQuery));
+          return matchSite && matchSearch;
+      });
+      
+      if (type === 'excel') {
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(finalData), "Material Stock");
+          XLSX.writeFile(wb, "Material_Stock.xlsx");
+      } else if (type === 'pdf') {
+          const doc = new jsPDF();
+          doc.text("Material Stock", 14, 15);
+          autoTable(doc, {
+              startY: 20,
+              head: [['Site', 'Date', 'Material', 'Supplier', 'Unit', 'Qty', 'Amount']],
+              body: finalData.map(d => [d.Site, d.Date, d.Material, d.Supplier, d.Unit, d.Qty, d.Amount]),
+              theme: 'grid', styles: { fontSize: 8 }
+          });
+          doc.save("Material_Stock.pdf");
+      }
+    } catch (e) {
+      console.error(e);
+      // toast.error("Export failed");
+    }
+  };
+useEffect(() => { fetchStock(); }, []);
 
   const toggleSite = (siteId) =>
     setExpandedSites(prev => ({ ...prev, [siteId]: !prev[siteId] }));
@@ -106,21 +166,23 @@ export default function MaterialStock() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white uppercase">Material Stock</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">
-            All material IN entries from daily reports — site-wise
-          </p>
-        </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search material, supplier..."
-            value={searchQuery}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
+          <button onClick={() => handleExport('excel')} className="bg-green-600 text-white px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-green-700 transition text-sm">
+              <Download className="w-4 h-4" /> Excel
+          </button>
+          <button onClick={() => handleExport('pdf')} className="bg-red-600 text-white px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-red-700 transition text-sm">
+              <Download className="w-4 h-4" /> PDF
+          </button>
+          <div className="relative w-full sm:w-64">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search material, supplier..."
+              value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setSitePages({}); }}
             className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
+        </div>
         </div>
       </div>
 

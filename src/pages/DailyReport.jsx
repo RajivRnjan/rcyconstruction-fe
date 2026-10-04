@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toast } from "react-hot-toast";
 import { useConfirm } from "../components/ConfirmProvider";
 import { useSearchParams } from 'react-router-dom';
-import { Calendar, Save, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Save, Plus, Trash2, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export default function DailyReport() {
   const confirm = useConfirm();
@@ -438,17 +441,85 @@ export default function DailyReport() {
   const siteInchargeBalance = initialBalance - currentExpenses - currentMaterialPaid;
 
 
+  
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`Daily Report - ${formData.date}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Site Incharge: ${formData.site_incharge}`, 14, 25);
+    
+    // Expenses
+    doc.autoTable({
+      startY: 35,
+      head: [['Expense Type', 'Name', 'Amount']],
+      body: formData.expenses.map(e => [e.type, e.name, e.amount]),
+      theme: 'grid'
+    });
+    
+    // Staff
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Staff Name', 'Status']],
+      body: formData.staff_attendance.map(s => [s.name, s.status]),
+      theme: 'grid'
+    });
+
+    // Subcontractors
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Subcontractor', 'Labour', 'Work Details', 'Amount']],
+      body: formData.subcontractors.map(s => [s.name, s.no_of_labour, s.work_details, s.amount]),
+      theme: 'grid'
+    });
+
+    // Material In
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Material In', 'Qnty', 'Unit', 'Rate', 'Amount']],
+      body: formData.material_in.map(m => [m.material, m.qnty, m.unit, m.rate, m.amount]),
+      theme: 'grid'
+    });
+
+    doc.save(`Daily_Report_${formData.date}.pdf`);
+  };
+
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    
+    const wsExpenses = XLSX.utils.json_to_sheet(formData.expenses);
+    XLSX.utils.book_append_sheet(wb, wsExpenses, "Expenses");
+
+    const wsStaff = XLSX.utils.json_to_sheet(formData.staff_attendance);
+    XLSX.utils.book_append_sheet(wb, wsStaff, "Staff");
+
+    const wsSub = XLSX.utils.json_to_sheet(formData.subcontractors);
+    XLSX.utils.book_append_sheet(wb, wsSub, "Subcontractors");
+
+    const wsMatIn = XLSX.utils.json_to_sheet(formData.material_in);
+    XLSX.utils.book_append_sheet(wb, wsMatIn, "Material In");
+
+    XLSX.writeFile(wb, `Daily_Report_${formData.date}.xlsx`);
+  };
+
   console.log('DEBUG formData:', formData);
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">DAILY SITE REPORT</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage daily entry for attendance, materials, and expenses.</p>
+        <div className="flex items-center gap-2">
+          {reportId && (
+            <>
+              <button onClick={handleExportExcel} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition-colors">
+                <Download className="w-4 h-4" /> Excel
+              </button>
+              <button onClick={handleExportPDF} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors">
+                <Download className="w-4 h-4" /> PDF
+              </button>
+            </>
+          )}
+          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
+            <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save Report'}
+          </button>
         </div>
-        <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
-          <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save Report'}
-        </button>
       </div>
 
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6">

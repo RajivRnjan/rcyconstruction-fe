@@ -7,10 +7,6 @@ export default function AddProject() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">ADD PROJECT</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Create a new project/master sheet</p>
-      </div>
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-6 relative">
         <AddProjectModal 
           isOpen={true} 

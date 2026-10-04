@@ -90,10 +90,6 @@ export default function DashboardHome() {
       
       {/* Header (Compact) */}
       <div className="flex justify-between items-end mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Dashboard Overview</h1>
-          <p className="text-sm text-gray-500 mt-1">Live metrics and financials across all sites.</p>
-        </div>
       </div>
 
       {/* Top 8 Mini Stats */}

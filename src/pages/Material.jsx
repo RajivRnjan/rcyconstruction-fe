@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Download } from 'lucide-react';
 import { toast } from "react-hot-toast";
 import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
@@ -18,7 +22,43 @@ export default function Material() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  useEffect(() => {
+  
+  const handleExport = async (type) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      
+      const res = await fetch(`${apiUrl}/materials?all=true`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch data");
+      const data = await res.json();
+      
+      const flatData = data.map(m => ({
+          'Material Name': m.name,
+          'Unit': m.unit || '-',
+          'Description': m.description || '-'
+      }));
+      
+      if (type === 'excel') {
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(flatData), "Materials List");
+          XLSX.writeFile(wb, "Materials_List.xlsx");
+      } else if (type === 'pdf') {
+          const doc = new jsPDF();
+          doc.text("Materials List", 14, 15);
+          autoTable(doc, {
+              startY: 20,
+              head: [['Material Name', 'Unit', 'Description']],
+              body: flatData.map(d => [d['Material Name'], d.Unit, d.Description]),
+              theme: 'grid', styles: { fontSize: 9 }
+          });
+          doc.save("Materials_List.pdf");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Export failed");
+    }
+  };
+useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -103,10 +143,6 @@ export default function Material() {
     <div className="space-y-6 animate-in fade-in duration-500">
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">MATERIALS</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Manage material inventory list</p>
-        </div>
         <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -118,13 +154,21 @@ export default function Material() {
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <button 
-              onClick={() => handleOpenModal('create')}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5" />
-              Add Material
-            </button>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+              <button onClick={() => handleExport('excel')} className="flex-1 sm:flex-none bg-green-600 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20 text-sm font-medium whitespace-nowrap">
+                  <Download className="w-4 h-4" /> Excel
+              </button>
+              <button onClick={() => handleExport('pdf')} className="flex-1 sm:flex-none bg-red-600 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20 text-sm font-medium whitespace-nowrap">
+                  <Download className="w-4 h-4" /> PDF
+              </button>
+              <button 
+                onClick={() => handleOpenModal('create')}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                Add Material
+              </button>
+            </div>
         </div>
       </div>
 
