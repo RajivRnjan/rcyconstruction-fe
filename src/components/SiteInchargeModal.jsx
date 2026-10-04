@@ -39,15 +39,15 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
 
   useEffect(() => {
     if (isOpen) {
-      if (initialData && (mode === 'edit' || mode === 'view')) {
+      if (initialData && (mode === 'edit' || mode === 'view' || mode === 'add_entry')) {
         setFormData({
-          date: initialData.date || '',
-          
+          date: mode === 'add_entry' ? new Date().toISOString().split('T')[0] : (initialData.date || ''),
+          site_id: initialData.site_id || '',
           name: initialData.name || '',
-          opening_bal: initialData.opening_bal || '',
-          credit: initialData.credit || '',
+          opening_bal: mode === 'add_entry' ? 0 : (initialData.opening_bal || ''),
+          credit: mode === 'add_entry' ? '' : (initialData.credit || ''),
           debit_account: initialData.debit_account || '',
-          exp: initialData.exp || '',
+          exp: mode === 'add_entry' ? '' : (initialData.exp || ''),
         });
       } else {
         setFormData({
@@ -131,6 +131,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
             {mode === 'create' && 'Add Site Incharge Record'}
             {mode === 'edit' && 'Edit Site Incharge Record'}
             {mode === 'view' && 'View Site Incharge Record'}
+            {mode === 'add_entry' && 'Add Amount Entry'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
             <X className="w-6 h-6" />
@@ -159,36 +160,40 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
 
             
 
+{mode !== 'add_entry' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Incharge Name *</label>
               <input
                 type="text"
                 name="name"
                 required
-                disabled={isView}
+                disabled={isView || mode === 'add_entry'}
                 value={formData.name}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
                 placeholder="Enter Name"
               />
             </div>
+)}
 
+{mode !== 'add_entry' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Opening Bal</label>
               <input
                 type="number"
                 name="opening_bal"
                 step="0.01"
-                disabled={isView}
+                disabled={isView || mode === 'add_entry'}
                 value={formData.opening_bal}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
                 placeholder="0.00"
               />
             </div>
+)}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Credit</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{mode === 'add_entry' ? 'Amount Given' : 'Credit'}</label>
               <input
                 type="number"
                 name="credit"
@@ -201,6 +206,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
               />
             </div>
 
+{mode !== 'add_entry' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Debit Account</label>
               <input
@@ -213,7 +219,9 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
                 placeholder="Enter debit account details"
               />
             </div>
+)}
 
+{mode !== 'add_entry' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Exp (Expense)</label>
               <input
@@ -227,10 +235,11 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
                 placeholder="0.00"
               />
             </div>
+)}
           </div>
 
           {/* Auto-calculated Balance */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-100 dark:border-blue-800/30 flex items-center justify-between">
+          {mode !== 'add_entry' && (<div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-100 dark:border-blue-800/30 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-blue-100 dark:bg-blue-800/50 p-2 rounded-lg">
                 <Calculator className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -245,7 +254,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
                 ₹{calculateBalance().toFixed(2)}
               </span>
             </div>
-          </div>
+          </div>)}
 
           <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
             <button 

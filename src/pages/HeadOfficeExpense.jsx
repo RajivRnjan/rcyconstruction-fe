@@ -137,7 +137,7 @@ export default function HeadOfficeExpense() {
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Name</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Expenses Head</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Supplier Name</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Name</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Mode of Payment</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Account</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
@@ -159,9 +159,9 @@ export default function HeadOfficeExpense() {
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.date || '-'}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">{record.expenses_head || '-'}</td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white">{record.supplier?.name || '-'}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">{record.person_name || record.supplier?.name || '-'}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.mode_of_payment || '-'}</td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.account?.name || '-'}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.account?.account_details || record.account?.name || '-'}</td>
                     <td className="px-6 py-4 font-bold text-red-600 dark:text-red-400">₹{record.amount}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">

@@ -109,7 +109,7 @@ export default function DailyReport() {
           fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/suppliers?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/materials?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/site-incharges?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/site-incharges-summary?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/subcontractors?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/daily-reports/expense-suggestions`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);

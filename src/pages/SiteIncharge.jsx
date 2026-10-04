@@ -1,3 +1,4 @@
+import ConfirmModal from '../components/ConfirmModal';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -5,14 +6,19 @@ import autoTable from 'jspdf-autotable';
 import { Download } from 'lucide-react';
 import { toast } from "react-hot-toast";
 import { useConfirm } from "../components/ConfirmProvider";
-import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Search, PlusCircle, History } from 'lucide-react';
 import SiteInchargeModal from '../components/SiteInchargeModal';
+import SiteInchargeHistoryModal from '../components/SiteInchargeHistoryModal';
 import Pagination from '../components/Pagination';
 
 export default function SiteIncharge() {
   const confirm = useConfirm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedHistoryName, setSelectedHistoryName] = useState('');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [records, setRecords] = useState([]);
@@ -54,7 +60,7 @@ export default function SiteIncharge() {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      let url = `${apiUrl}/site-incharges?all=true`;
+      let url = `${apiUrl}/site-incharges-summary?all=true`;
       if (debouncedSearch) url += `&search=${debouncedSearch}`;
       if (filterSite) url += `&site_id=${filterSite}`;
       if (filterDate) url += `&date=${filterDate}`;
@@ -100,7 +106,7 @@ export default function SiteIncharge() {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      let queryUrl = `${apiUrl}/site-incharges?page=${page}`;
+      let queryUrl = `${apiUrl}/site-incharges-summary?page=${page}`;
       if (search) queryUrl += `&search=${search}`;
       if (site) queryUrl += `&site_id=${site}`;
       if (date) queryUrl += `&date=${date}`;
@@ -146,10 +152,12 @@ export default function SiteIncharge() {
     setSelectedRecord(null);
   };
 
-  const handleDelete = async (id) => {
-    if (!await confirm('Are you sure you want to delete this record?')) return;
-    
+  const executeDelete = async (record) => {
     try {
+      // If we are deleting from main table, we should ideally delete all records for this name.
+      // But for now we will just delete the main record.
+      const id = record.id;
+      const name = record.name;
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
@@ -258,13 +266,16 @@ export default function SiteIncharge() {
                     <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">₹{record.balance}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">
-                        <button onClick={() => handleOpenModal('view', record)} className="text-gray-400 hover:text-blue-600 transition-colors" title="View">
-                          <Eye className="w-4 h-4" />
+                        <button onClick={() => handleOpenModal('add_entry', record)} className="text-gray-400 hover:text-green-600 transition-colors" title="Add Entry">
+                          <PlusCircle className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => { setSelectedHistoryName(record.name); setIsHistoryOpen(true); }} className="text-gray-400 hover:text-blue-600 transition-colors" title="View History">
+                          <History className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleOpenModal('edit', record)} className="text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(record.id)} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+                        <button onClick={() => { setRecordToDelete(record); setIsConfirmOpen(true); }} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete Person">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -284,6 +295,17 @@ export default function SiteIncharge() {
         onSuccess={handleSuccess}
         initialData={selectedRecord}
         mode={modalMode}
+      />
+      <SiteInchargeHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => { setIsHistoryOpen(false); fetchRecords(); }}
+        inchargeName={selectedHistoryName}
+      />
+      <ConfirmModal 
+        isOpen={isConfirmOpen} 
+        onClose={() => setIsConfirmOpen(false)} 
+        onConfirm={() => executeDelete(recordToDelete)} 
+        message="Are you sure you want to delete this person and their latest record?"
       />
     </div>
   );
