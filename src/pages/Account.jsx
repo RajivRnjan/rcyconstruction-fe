@@ -4,6 +4,8 @@ import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
 import Pagination from '../components/Pagination';
 import AccountModal from '../components/AccountModal';
+import AccountHistoryModal from '../components/AccountHistoryModal';
+import { History } from 'lucide-react';
 
 export default function Account() {
   const confirm = useConfirm();
@@ -11,6 +13,8 @@ export default function Account() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedAccountForHistory, setSelectedAccountForHistory] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -146,6 +150,9 @@ export default function Account() {
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{acc.details || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">
+                                                <button onClick={() => { setSelectedAccountForHistory(acc); setIsHistoryModalOpen(true); }} className="text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors" title="View Ledger/History">
+                          <History className="w-4 h-4" />
+                        </button>
                         <button onClick={() => handleOpenModal('view', acc)} className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="View">
                           <Eye className="w-4 h-4" />
                         </button>
@@ -165,6 +172,13 @@ export default function Account() {
         </div>
       </div>
       <Pagination pagination={pagination} onPageChange={setCurrentPage} />
+
+      <AccountHistoryModal 
+        isOpen={isHistoryModalOpen}
+        onClose={() => { setIsHistoryModalOpen(false); setSelectedAccountForHistory(null); }}
+        accountId={selectedAccountForHistory?.id}
+        accountDetails={selectedAccountForHistory?.account_details}
+      />
 
       <AccountModal 
         isOpen={isModalOpen} 

@@ -8,6 +8,62 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
   const [error, setError] = useState('');
   
   const [sites, setSites] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isAddingAccount, setIsAddingAccount] = useState(false);
+  const [newAccData, setNewAccData] = useState({
+    account_details: '',
+    opening_balance: '',
+    receipt_amount: '',
+    payment_amount: '',
+    details: ''
+  });
+
+  const handleNewAccChange = (e) => {
+    setNewAccData({ ...newAccData, [e.target.name]: e.target.value });
+  };
+
+  const submitNewAccount = async () => {
+    if (!newAccData.account_details.trim()) return;
+    setIsAddingAccount(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${apiUrl}/accounts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(newAccData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newAcc = data.data;
+        setAccounts(prev => [...prev, newAcc]);
+        setFormData(prev => ({ ...prev, account_id: newAcc.id }));
+        setIsAccountModalOpen(false);
+        setNewAccData({
+          account_details: '',
+          opening_balance: '',
+          receipt_amount: '',
+          payment_amount: '',
+          details: ''
+        });
+      } else {
+        console.error('Failed to add account');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAddingAccount(false);
+    }
+  };
+
+
+  
   
   const [formData, setFormData] = useState({
     date: '',
@@ -15,7 +71,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
     name: '',
     opening_bal: '',
     credit: '',
-    debit_account: '',
+    account_id: '', remark: '',
     exp: '',
   });
 
@@ -28,7 +84,9 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
         
         try {
           const siteRes = await fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const accRes = await fetch(`${apiUrl}/accounts?all=1`, { headers: { 'Authorization': `Bearer ${token}` } });
           if (siteRes.ok) setSites(await siteRes.json());
+          if (accRes.ok) setAccounts(await accRes.json());
         } catch (err) {
           console.error("Failed to fetch master data", err);
         }
@@ -46,7 +104,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
           name: initialData.name || '',
           opening_bal: mode === 'add_entry' ? 0 : (initialData.opening_bal || ''),
           credit: mode === 'add_entry' ? '' : (initialData.credit || ''),
-          debit_account: initialData.debit_account || '',
+          account_id: mode === 'add_entry' ? '' : (initialData.account_id || ''), remark: mode === 'add_entry' ? '' : (initialData.remark || ''),
           exp: mode === 'add_entry' ? '' : (initialData.exp || ''),
         });
       } else {
@@ -56,7 +114,7 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
           name: '',
           opening_bal: '',
           credit: '',
-          debit_account: '',
+          account_id: '', remark: '',
           exp: '',
         });
       }
@@ -160,6 +218,37 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
 
             
 
+
+            <div className="sm:col-span-2">
+              <div className="flex justify-between items-center mb-2"><label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account</label><button type="button" onClick={() => setIsAccountModalOpen(true)} className="text-blue-600 hover:text-blue-700 text-xs font-medium">+ Add Account</button></div>
+              <select
+                name="account_id"
+                disabled={isView}
+                value={formData.account_id}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                <option value="">Select Account</option>
+                {accounts.map(a => (
+                  <option key={a.id} value={a.id}>{a.account_details || a.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Remark</label>
+              <input
+                type="text"
+                name="remark"
+                disabled={isView}
+                value={formData.remark}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
+                placeholder="Enter remark..."
+              />
+            </div>
+
+
 {mode !== 'add_entry' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Incharge Name *</label>
@@ -206,20 +295,6 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
               />
             </div>
 
-{mode !== 'add_entry' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Debit Account</label>
-              <input
-                type="text"
-                name="debit_account"
-                disabled={isView}
-                value={formData.debit_account}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white ${isView ? 'opacity-70 cursor-not-allowed' : ''}`}
-                placeholder="Enter debit account details"
-              />
-            </div>
-)}
 
 {mode !== 'add_entry' && (
             <div>
@@ -275,6 +350,95 @@ export default function SiteInchargeModal({ isOpen, onClose, onSuccess, initialD
             )}
           </div>
         </form>
+
+      
+
+
+      {isAccountModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add Account Record</h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Details *</label>
+                <input 
+                  type="text" name="account_details" autoFocus
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  placeholder="e.g. 123, 456, CASH"
+                  value={newAccData.account_details}
+                  onChange={handleNewAccChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Opening Balance</label>
+                <input 
+                  type="number" name="opening_balance"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  value={newAccData.opening_balance} onChange={handleNewAccChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Receipt Amount</label>
+                <input 
+                  type="number" name="receipt_amount"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  value={newAccData.receipt_amount} onChange={handleNewAccChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Amount</label>
+                <input 
+                  type="number" name="payment_amount"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  value={newAccData.payment_amount} onChange={handleNewAccChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Balance (Auto-Calculated)</label>
+                <div className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-green-500 font-medium">
+                  ₹{ (parseFloat(newAccData.opening_balance||0) + parseFloat(newAccData.receipt_amount||0) - parseFloat(newAccData.payment_amount||0)).toFixed(2) }
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
+                <textarea 
+                  name="details" rows="3"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  value={newAccData.details} onChange={handleNewAccChange}
+                ></textarea>
+              </div>
+
+            </div>
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+              <button 
+                type="button"
+                onClick={() => setIsAccountModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                disabled={isAddingAccount}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={submitNewAccount}
+                className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                disabled={isAddingAccount || !newAccData.account_details.trim()}
+              >
+                {isAddingAccount ? 'Saving...' : 'Save Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>,
     document.body

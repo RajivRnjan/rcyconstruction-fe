@@ -68,6 +68,8 @@ export default function SiteInchargeHistoryModal({ isOpen, onClose, inchargeName
                   <th className="px-6 py-4 dark:text-gray-300">Date</th>
                   <th className="px-6 py-4 dark:text-gray-300">Opening Bal</th>
                   <th className="px-6 py-4 dark:text-gray-300">Credit</th>
+                  <th className="px-6 py-4 dark:text-gray-300">Account</th>
+                  <th className="px-6 py-4 dark:text-gray-300">Remark</th>
                   <th className="px-6 py-4 dark:text-gray-300">Expense</th>
                   <th className="px-6 py-4 dark:text-gray-300">Balance</th>
                   <th className="px-6 py-4 dark:text-gray-300">Action</th>
@@ -79,12 +81,14 @@ export default function SiteInchargeHistoryModal({ isOpen, onClose, inchargeName
                     <td className="px-6 py-4 dark:text-white">{record.date || '-'}</td>
                     <td className="px-6 py-4 dark:text-gray-300">₹{record.opening_bal}</td>
                     <td className="px-6 py-4 text-green-500">₹{record.credit}</td>
+                    <td className="px-6 py-4 dark:text-gray-300">{record.account_name || '-'}</td>
+                    <td className="px-6 py-4 dark:text-gray-300 max-w-[150px] truncate" title={record.remark}>{record.remark || '-'}</td>
                     <td className="px-6 py-4 text-red-500">₹{record.exp}</td>
                     <td className="px-6 py-4 text-blue-500">₹{record.balance}</td>
                     <td className="px-6 py-4">
-                      <button onClick={() => { setRecordToDelete(record.id); setIsConfirmOpen(true); }} className="text-red-500 hover:text-red-700">
+                      {record.is_manual && (<button onClick={() => { setRecordToDelete(record.id); setIsConfirmOpen(true); }} className="text-red-500 hover:text-red-700">
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>)}
                     </td>
                   </tr>
                 ))}

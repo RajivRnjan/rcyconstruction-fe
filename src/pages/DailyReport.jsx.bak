@@ -14,7 +14,6 @@ export default function DailyReport() {
   const reportId = searchParams.get('id');
   const [sites, setSites] = useState([]);
   const [allSubcontractors, setAllSubcontractors] = useState([]);
-  const [allStaffList, setAllStaffList] = useState([]);
   const [expenseSuggestions, setExpenseSuggestions] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [materialsList, setMaterialsList] = useState([]);
@@ -74,7 +73,7 @@ export default function DailyReport() {
               site_id: r.site_id || '',
               date: r.date || new Date().toISOString().split('T')[0],
               site_incharge: r.site_incharge || '',
-              staff_attendance: [], // will be merged with allStaffList in useEffect below
+              staff_attendance: r.staff ? r.staff.map(s => ({ staff_id: s.staff_id, name: s.name, status: s.status })) : [],
               expenses: r.expenses && r.expenses.length > 0 ? r.expenses.map(e => ({
                 ...e, 
                 type: e.type === 'PARTY PAYMENT' ? 'SUPPLIER PAYMENT' : (e.type === 'Site expenses' ? 'SITE EXPENSE' : e.type)
@@ -99,46 +98,6 @@ export default function DailyReport() {
     }
   }, [reportId]);
 
-  // When editing, merge saved attendance with full staff list
-  useEffect(() => {
-    if (!reportId || allStaffList.length === 0) return;
-    
-    const fetchAndMerge = async () => {
-      try {
-        const token = localStorage.getItem('admin_token');
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const res = await fetch(`${apiUrl}/daily-reports/${reportId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const savedStaff = data.report.staff || [];
-          const savedMap = {};
-          savedStaff.forEach(s => { savedMap[s.name] = s.status; });
-          
-          // Merge: all staff shown, saved ones get their saved status
-          const merged = allStaffList.map(staff => ({
-            staff_id: staff.id,
-            name: staff.name,
-            status: savedMap[staff.name] || 'A'
-          }));
-          
-          // Add any saved staff not in allStaffList (edge case)
-          savedStaff.forEach(s => {
-            if (!allStaffList.find(a => a.name === s.name)) {
-              merged.push({ staff_id: s.staff_id, name: s.name, status: s.status });
-            }
-          });
-          
-          setFormData(prev => ({ ...prev, staff_attendance: merged }));
-        }
-      } catch (e) {
-        console.error("Failed to merge staff attendance", e);
-      }
-    };
-    fetchAndMerge();
-  }, [reportId, allStaffList]);
-
   useEffect(() => {
     // Fetch sites for dropdown
     const fetchSites = async () => {
@@ -146,14 +105,13 @@ export default function DailyReport() {
         const token = localStorage.getItem('admin_token');
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-        const [projRes, suppRes, matRes, inchargeRes, subRes, expSuggRes, allStaffRes] = await Promise.all([
+        const [projRes, suppRes, matRes, inchargeRes, subRes, expSuggRes] = await Promise.all([
           fetch(`${apiUrl}/sites?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/suppliers?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/materials?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/site-incharges-summary?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
           fetch(`${apiUrl}/subcontractors?all=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/daily-reports/expense-suggestions`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${apiUrl}/daily-reports/all-staff`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${apiUrl}/daily-reports/expense-suggestions`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (projRes.ok) setSites(await projRes.json());
@@ -162,7 +120,6 @@ export default function DailyReport() {
         if (inchargeRes.ok) setSiteIncharges(await inchargeRes.json());
         if (subRes.ok) setAllSubcontractors(await subRes.json());
         if (expSuggRes && expSuggRes.ok) setExpenseSuggestions(await expSuggRes.json());
-        if (allStaffRes && allStaffRes.ok) setAllStaffList(await allStaffRes.json());
 
       } catch (e) {
         console.error(e);
@@ -172,7 +129,7 @@ export default function DailyReport() {
   }, []);
 
 
-  // Sync staff from all staff list to attendance form
+  // Sync staff from selected site to attendance form
   useEffect(() => {
     const site = sites.find(s => s.id.toString() === formData.site_id.toString());
     
@@ -181,21 +138,24 @@ export default function DailyReport() {
       setFormData(prev => ({ ...prev, site_incharge: site.site_incharge.name }));
     }
 
-    // Populate all staff for attendance (only when not editing and allStaffList loaded)
-    if (allStaffList.length > 0 && !reportId) {
-      const currentNames = formData.staff_attendance.map(a => a.name).sort().join(',');
-      const allNames = allStaffList.map(s => s.name).sort().join(',');
+    if (site && site.site_staff && site.site_staff.length > 0) {
+      // Check if we already populated this site's staff to avoid overriding user input
+      const currentStaffIds = formData.staff_attendance.map(a => a.staff_id);
+      const siteStaffIds = site.site_staff.map(s => s.id);
       
-      if (currentNames !== allNames) {
+      // If mismatch (meaning site changed), reset attendance
+      if (currentStaffIds.join(',') !== siteStaffIds.join(',')) {
         setFormData(prev => ({
           ...prev,
-          staff_attendance: allStaffList.map(staff => ({
+          staff_attendance: site.site_staff.map(staff => ({
             staff_id: staff.id,
             name: staff.name,
-            status: 'A' // default Absent, user checks for Present
+            status: 'P' // default Present
           }))
         }));
       }
+    } else if (formData.staff_attendance.length > 0) {
+      setFormData(prev => ({ ...prev, staff_attendance: [] }));
     }
 
     // Sync subcontractors
@@ -218,7 +178,7 @@ export default function DailyReport() {
     } else if (formData.subcontractors.length > 0 && formData.subcontractors[0].name !== '') {
       setFormData(prev => ({ ...prev, subcontractors: [{ name: '', no_of_labour: '', amount: '', work_details: '' }] }));
     }
-  }, [formData.site_id, sites, allStaffList]);
+  }, [formData.site_id, sites]);
 
 
     // Filter subcontractors by selected site
@@ -300,8 +260,7 @@ export default function DailyReport() {
 
       if (res.ok) {
         const newStaff = await res.json();
-        // Add to allStaffList and current form data
-        setAllStaffList(prev => [...prev, { id: newStaff.id, name: newStaff.name }]);
+        // Add to current form data
         setFormData(prev => ({
           ...prev,
           staff_attendance: [...prev.staff_attendance, { staff_id: newStaff.id, name: newStaff.name, status: 'P' }]
@@ -614,21 +573,26 @@ export default function DailyReport() {
             <button type="button" onClick={handleAddQuickStaff} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add Staff</button>
           </div>
           {formData.staff_attendance.length === 0 ? (
-            <div className="text-sm text-gray-500 italic mt-2">Loading staff list...</div>
+            <div className="text-sm text-gray-500 italic mt-2">No staff added yet. Click "Add Staff" to assign staff.</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {formData.staff_attendance.map((att, i) => (
-                <div key={att.staff_id || att.name} className={`p-3 border rounded-xl flex items-center justify-between transition-colors ${att.status === 'P' ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
+                <div key={att.staff_id} className="p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate pr-2">{att.name}</span>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
-                      checked={att.status === 'P'} 
-                      onChange={e => handleDynamicChange('staff_attendance', i, 'status', e.target.checked ? 'P' : 'A')}
-                      className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
-                    />
-                    <span className={`text-sm font-medium ${att.status === 'P' ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>{att.status === 'P' ? 'Present' : 'Absent'}</span>
-                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={att.status === 'P'} 
+                        onChange={e => handleDynamicChange('staff_attendance', i, 'status', e.target.checked ? 'P' : 'A')}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Present</span>
+                    </label>
+                    <button onClick={() => handleRemoveStaff(att.staff_id, i)} className="text-gray-400 hover:text-red-500 p-1" title="Remove staff from site">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

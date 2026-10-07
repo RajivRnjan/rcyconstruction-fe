@@ -75,7 +75,8 @@ export default function SiteIncharge() {
           'Site Incharge': s.name || '-',
           'Opening Bal': s.opening_bal || 0,
           'Credit': s.credit || 0,
-          'Debit Account': s.debit_account || '-',
+          'Account': s.account?.account_details || '-',
+          'Remark': s.remark || '-',
           'Exp': s.exp || 0,
           'Balance': s.balance || 0
       }));
@@ -89,8 +90,8 @@ export default function SiteIncharge() {
           doc.text("Site Incharge List", 14, 15);
           autoTable(doc, {
               startY: 20,
-              head: [['Date', 'Site Name', 'Site Incharge', 'Opening Bal', 'Credit', 'Debit Acct', 'Exp', 'Balance']],
-              body: flatData.map(d => [d.Date, d['Site Name'], d['Site Incharge'], d['Opening Bal'], d.Credit, d['Debit Account'], d.Exp, d.Balance]),
+              head: [['Date', 'Site Name', 'Site Incharge', 'Opening Bal', 'Credit', 'Account', 'Remark', 'Exp', 'Balance']],
+              body: flatData.map(d => [d.Date, d['Site Name'], d['Site Incharge'], d['Opening Bal'], d.Credit, d.Account, d.Remark, d.Exp, d.Balance]),
               theme: 'grid', styles: { fontSize: 8 }
           });
           doc.save("Site_Incharge_List.pdf");
@@ -238,7 +239,8 @@ export default function SiteIncharge() {
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Incharge</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Opening Bal</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Credit</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Debit Account</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Account</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Remark</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Exp</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Balance</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
@@ -247,11 +249,11 @@ export default function SiteIncharge() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800 transition-colors duration-300">
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                  <td colSpan="10" className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : (!records || records.length === 0) ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-8 text-center text-gray-500">No records found.</td>
+                  <td colSpan="10" className="px-6 py-8 text-center text-gray-500">No records found.</td>
                 </tr>
               ) : (
                 records.map((record) => (
@@ -261,7 +263,8 @@ export default function SiteIncharge() {
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{record.name}</td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">₹{record.opening_bal}</td>
                     <td className="px-6 py-4 text-green-600 dark:text-green-400 font-medium">₹{record.credit}</td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300 truncate max-w-[150px]">{record.debit_account || '-'}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.account?.account_details || '-'}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300 max-w-[150px] truncate">{record.remark || '-'}</td>
                     <td className="px-6 py-4 text-red-600 dark:text-red-400 font-medium">₹{record.exp}</td>
                     <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400">₹{record.balance}</td>
                     <td className="px-6 py-4">
