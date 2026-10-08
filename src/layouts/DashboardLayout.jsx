@@ -41,7 +41,7 @@ const navItems = [
     name: 'Daily Reports', 
     icon: FileText,
     subItems: [
-      { name: 'Add Report', path: '/daily-report' },
+      { name: 'Add Report', path: '/daily-report', target: '_blank' },
       { name: 'Reports List', path: '/daily-reports-list' }]
   },
   { name: 'Staff Salary', path: '/salary', icon: Users },
@@ -197,6 +197,7 @@ export default function DashboardLayout() {
                       <NavLink
                         key={sub.name}
                         to={sub.path}
+                        target={sub.target}
                         className={({ isActive }) =>
                           `block px-4 py-2 text-sm rounded-xl transition-all font-medium ${
                             isActive
@@ -293,6 +294,7 @@ export default function DashboardLayout() {
                           <NavLink
                             key={sub.name}
                             to={sub.path}
+                            target={sub.target}
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={({ isActive }) =>
                               `block px-4 py-2 text-sm rounded-xl transition-all font-medium ${

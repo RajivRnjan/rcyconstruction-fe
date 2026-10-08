@@ -23,6 +23,7 @@ export default function DailyReport() {
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffSalary, setNewStaffSalary] = useState('');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const [staffSearchText, setStaffSearchText] = useState('');
 
   // Quick Add Subcontractor States
   const [isSubcontractorModalOpen, setIsSubcontractorModalOpen] = useState(false);
@@ -609,28 +610,56 @@ export default function DailyReport() {
         
         {/* Staff Attendance */}
         <div className="mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-1">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Staff Attendance</h3>
             <button type="button" onClick={handleAddQuickStaff} className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"><Plus className="w-3 h-3"/> Add Staff</button>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Search and select staff names to mark them as present.</p>
           {formData.staff_attendance.length === 0 ? (
             <div className="text-sm text-gray-500 italic mt-2">Loading staff list...</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {formData.staff_attendance.map((att, i) => (
-                <div key={att.staff_id || att.name} className={`p-3 border rounded-xl flex items-center justify-between transition-colors ${att.status === 'P' ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate pr-2">{att.name}</span>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
-                      checked={att.status === 'P'} 
-                      onChange={e => handleDynamicChange('staff_attendance', i, 'status', e.target.checked ? 'P' : 'A')}
-                      className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
-                    />
-                    <span className={`text-sm font-medium ${att.status === 'P' ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>{att.status === 'P' ? 'Present' : 'Absent'}</span>
-                  </label>
+            <div className="space-y-4">
+              <div className="max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2 w-full p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl min-h-[46px] max-h-48 overflow-y-auto cursor-text" onClick={(e) => {
+                    const input = e.currentTarget.querySelector('input');
+                    if(input) input.focus();
+                }}>
+                  {formData.staff_attendance.map((att, i) => att.status === 'P' && (
+                    <div key={att.staff_id || att.name} className="flex items-center gap-1.5 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm font-medium transition-colors">
+                      <span>{att.name}</span>
+                      <button 
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleDynamicChange('staff_attendance', i, 'status', 'A'); }}
+                        className="hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full w-5 h-5 flex items-center justify-center -mr-1 transition-colors"
+                        title="Mark Absent"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                  <input 
+                    type="text" 
+                    list="staff-list" 
+                    value={staffSearchText}
+                    placeholder={formData.staff_attendance.some(s => s.status === 'P') ? "" : "Search and select staff..."}
+                    className="flex-1 min-w-[200px] bg-transparent border-none focus:ring-0 text-sm p-1 outline-none dark:text-white"
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setStaffSearchText(name);
+                      const index = formData.staff_attendance.findIndex(s => s.name === name);
+                      if (index !== -1 && formData.staff_attendance[index].status !== 'P') {
+                        handleDynamicChange('staff_attendance', index, 'status', 'P');
+                        setStaffSearchText('');
+                      }
+                    }}
+                  />
                 </div>
-              ))}
+                <datalist id="staff-list">
+                  {formData.staff_attendance.filter(s => s.status !== 'P').map(s => (
+                    <option key={s.staff_id || s.name} value={s.name} />
+                  ))}
+                </datalist>
+              </div>
             </div>
           )}
         </div>
