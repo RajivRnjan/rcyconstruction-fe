@@ -29,6 +29,10 @@ export default function AddSite() {
             max-width: 100%;
             box-shadow: none;
           }
+          /* Hide the duplicate modal header on the AddSite page */
+          .site-modal-overlay > div > div:first-child {
+            display: none !important;
+          }
         `}</style>
       </div>
     </div>

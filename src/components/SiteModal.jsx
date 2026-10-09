@@ -183,8 +183,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
           )}
 
           <div className="grid grid-cols-1 gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-<div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Site Name *</label>
               <input 
                 type="text" 
@@ -196,7 +195,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
                 placeholder="Enter site name"
               />
             </div>
-<div>
+{/*<div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Site Incharge *</label>
               <div className="flex items-center gap-2">
                 <select required disabled={isView} value={formData.site_incharge_id} onChange={(e) => setFormData({...formData, site_incharge_id: e.target.value})} className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
@@ -212,10 +211,9 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
                   <Plus className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-</div>
+            </div>*/}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/*<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">BOQ Name</label>
               <input 
@@ -227,7 +225,7 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
                 placeholder="Enter BOQ name"
               />
             </div>
-          </div>
+          </div>*/}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -383,7 +381,9 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
             </div>
           </div>}
 
-          {/* BOQ Items Section */}
+          {/*
+{/*
+ BOQ Items Section 
           <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">BOQ Details</h3>
@@ -456,6 +456,10 @@ export default function SiteModal({ isOpen, onClose, onSuccess, initialData = nu
 
 
 
+
+
+          
+*/}
           <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
             <button 
               type="button" 

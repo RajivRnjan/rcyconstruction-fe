@@ -74,6 +74,7 @@ export default function DashboardLayout() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   
   const location = useLocation();
+  const isDailyReport = location.pathname === '/daily-report';
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === '/') return { title: 'Dashboard', desc: 'Welcome back, Admin' };
@@ -150,14 +151,14 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white font-sans flex transition-colors duration-300">
       
       {/* Sidebar for Desktop */}
-      <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-800 h-screen sticky top-0 transition-all duration-300`}>
+      {!isDailyReport && (<aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-800 h-screen sticky top-0 transition-all duration-300`}>
         <div className={`p-4 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} border-b border-gray-200 dark:border-gray-800 h-20`}>
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
                 <LayoutDashboard className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-400 dark:to-blue-200 text-transparent bg-clip-text whitespace-nowrap truncate">RCY Construction</h2>
+              <h2 className="text-lg font-bold bg-gradient-to-r tracking-tight from-blue-600 to-blue-400 dark:from-blue-400 dark:to-blue-200 text-transparent bg-clip-text whitespace-nowrap truncate">RCY Construction</h2>
             </div>
           )}
           {isSidebarCollapsed && (
@@ -167,7 +168,7 @@ export default function DashboardLayout() {
           )}
           {!isSidebarCollapsed && (
             <button onClick={() => setIsSidebarCollapsed(true)} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0">
-               <PanelLeftClose className="w-5 h-5" />
+               <Menu className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -242,7 +243,8 @@ export default function DashboardLayout() {
             {!isSidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
-      </aside>
+      </aside>)}
+
 
       {/* Mobile Header & Menu overlay */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center justify-between px-4 z-50 transition-colors duration-300">
@@ -341,6 +343,7 @@ export default function DashboardLayout() {
           </aside>
         </div>
       )}
+
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 pt-16 md:pt-0 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">

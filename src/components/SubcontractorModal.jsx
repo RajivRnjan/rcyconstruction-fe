@@ -12,6 +12,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
     date: '',
     site_id: '',
     name: '',
+      no_of_labour: '',
     amount: '',
     work_details: ''
   });
@@ -49,6 +50,7 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
           date: new Date().toISOString().split('T')[0],
           site_id: '',
           name: '',
+      no_of_labour: '',
           amount: '',
           work_details: ''
         });
@@ -169,6 +171,18 @@ export default function SubcontractorModal({ isOpen, onClose, onSuccess, initial
               />
             </div>
 
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Labour Count</label>
+              <input
+                type="number"
+                value={formData.no_of_labour}
+                onChange={(e) => setFormData({ ...formData, no_of_labour: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter labour count"
+                disabled={mode === 'view'}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
               <input

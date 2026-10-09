@@ -8,6 +8,8 @@ import { useConfirm } from "../components/ConfirmProvider";
 import { Plus, Edit2, Trash2, Eye, Search } from 'lucide-react';
 import Pagination from '../components/Pagination';
 import SubcontractorModal from '../components/SubcontractorModal';
+import RenameModal from '../components/RenameModal';
+import SubcontractorHistoryModal from '../components/SubcontractorHistoryModal';
 
 export default function Subcontractor() {
   const confirm = useConfirm();
@@ -15,6 +17,10 @@ export default function Subcontractor() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyName, setHistoryName] = useState('');
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState('');
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
@@ -33,35 +39,54 @@ export default function Subcontractor() {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      let url = `${apiUrl}/subcontractors?all=true`;
+      let url = `${apiUrl}/subcontractors/all-history?all=true`;
       if (debouncedSearch) url += `&search=${debouncedSearch}`;
 
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) throw new Error("Failed to fetch data");
       const data = await res.json();
       
-      const flatData = data.map(s => ({
-          'Date': s.date || '-',
-          'Site': s.site?.name || '-',
-          'Subcontract Labour': s.name || '-',
-          'Amount': s.amount || 0,
-          'Work Details': s.work_details || '-'
-      }));
+      let totalLabour = 0;
+      let totalAmount = 0;
+
+      const flatData = data.map(s => {
+          const lCount = parseFloat(s.no_of_labour) || 0;
+          const amt = parseFloat(s.amount) || 0;
+          totalLabour += lCount;
+          totalAmount += amt;
+          return {
+              'Date': s.date || '-',
+              'Site': s.site?.name || '-',
+              'Subcontractor Name': s.name || '-',
+              'Labour Count': lCount,
+              'Amount': amt,
+              'Work Details': s.work_details || '-'
+          };
+      });
+
+      flatData.push({
+          'Date': 'TOTAL',
+          'Site': '',
+          'Subcontractor Name': '',
+          'Labour Count': totalLabour,
+          'Amount': totalAmount,
+          'Work Details': ''
+      });
       
       if (type === 'excel') {
           const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(flatData), "Subcontractor");
-          XLSX.writeFile(wb, "Subcontractor.xlsx");
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(flatData), "Subcontractor_Details");
+          XLSX.writeFile(wb, "Subcontractor_Details.xlsx");
       } else if (type === 'pdf') {
-          const doc = new jsPDF();
-          doc.text("Subcontractor List", 14, 15);
+          const doc = new jsPDF('landscape');
+          doc.text("Subcontractor Detailed List", 14, 15);
           autoTable(doc, {
               startY: 20,
-              head: [['Date', 'Site', 'Subcontract Labour', 'Amount', 'Work Details']],
-              body: flatData.map(d => [d.Date, d.Site, d['Subcontract Labour'], d.Amount, d['Work Details']]),
+              head: [['Date', 'Site', 'Subcontractor Name', 'Labour Count', 'Amount', 'Work Details']],
+              body: flatData.map(d => [d['Date'], d['Site'], d['Subcontractor Name'], d['Labour Count'], d['Amount'], d['Work Details']]),
               theme: 'grid', styles: { fontSize: 9 }
           });
-          doc.save("Subcontractor_List.pdf");
+          doc.save("Subcontractor_Detailed_List.pdf");
       }
     } catch (e) {
       console.error(e);
@@ -74,7 +99,7 @@ export default function Subcontractor() {
       const token = localStorage.getItem('admin_token');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
-      const response = await fetch(`${apiUrl}/subcontractors?page=${page}&search=${search}`, {
+      const response = await fetch(`${apiUrl}/subcontractors/summary?page=${page}&search=${search}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
@@ -110,6 +135,69 @@ export default function Subcontractor() {
     setModalMode(mode);
     setSelectedRecord(record);
     setIsModalOpen(true);
+  };
+
+  const handleOpenHistory = (name) => {
+    setHistoryName(name);
+    setIsHistoryOpen(true);
+  };
+  
+  const handleCloseHistory = () => {
+    setIsHistoryOpen(false);
+    setHistoryName('');
+  };
+
+
+  const handleOpenRename = (name) => {
+    setRenameTarget(name);
+    setIsRenameOpen(true);
+  };
+
+  const handleRenameSubmit = async (newName) => {
+    if (!newName || newName === renameTarget) {
+      setIsRenameOpen(false);
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${apiUrl}/subcontractors/${encodeURIComponent(renameTarget)}/rename`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_name: newName })
+      });
+      if (res.ok) {
+        toast.success('Renamed successfully');
+        setIsRenameOpen(false);
+        fetchRecords();
+      } else {
+        toast.error('Failed to rename');
+      }
+    } catch (e) {
+      toast.error('Error renaming');
+    }
+  };
+
+  const handleDeleteAll = async (name) => {
+    if (await confirm(`Are you sure you want to delete ALL records for ${name}? This action cannot be undone.`)) {
+      try {
+        const token = localStorage.getItem('admin_token');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const res = await fetch(`${apiUrl}/subcontractors/${encodeURIComponent(name)}/delete-all`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          toast.success('Deleted successfully');
+          fetchRecords();
+        } else {
+          toast.error('Failed to delete');
+        }
+      } catch (e) {
+        toast.error('Error deleting');
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -180,12 +268,9 @@ export default function Subcontractor() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 dark:bg-gray-950/50 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
               <tr>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site</th>
-                {/* <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Source</th> */}
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Subcontract Labour</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 w-1/3">Work Details</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Total Labour Count</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Total Amount</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
               </tr>
             </thead>
@@ -200,31 +285,27 @@ export default function Subcontractor() {
                 </tr>
               ) : (
                 records.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="px-6 py-4 text-gray-900 dark:text-white">{record.date || '-'}</td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white max-w-[150px] truncate">{record.site?.name || '-'}</td>
-                    {/* <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded-md ${record.source === 'Daily Report' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{record.source || 'Standalone'}</span></td> */}
+                                    <tr key={record.name} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{record.name}</td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.amount}</td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={record.work_details}>{record.work_details || '-'}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.total_labour}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{record.total_amount}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-3">
-                        <>
-                            <button onClick={() => handleOpenModal('view', record)} className="text-gray-400 hover:text-blue-600 transition-colors" title="View">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleOpenModal('edit', record)} className="text-gray-400 hover:text-amber-600 transition-colors" title="Edit">
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDelete(record.id)} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
+                        <button onClick={() => handleOpenHistory(record.name)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="View History">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleOpenRename(record.name)} className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="Rename Subcontractor">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteAll(record.name)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete All Records">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))
               )}
+
             </tbody>
           </table>
         </div>
@@ -237,6 +318,20 @@ export default function Subcontractor() {
         initialData={selectedRecord}
         mode={modalMode}
       />
+      <RenameModal
+        isOpen={isRenameOpen}
+        onClose={() => setIsRenameOpen(false)}
+        onSubmit={handleRenameSubmit}
+        initialName={renameTarget}
+      />
+
+      {isHistoryOpen && (
+        <SubcontractorHistoryModal
+          name={historyName}
+          onClose={handleCloseHistory}
+          onEdit={(record) => { handleOpenModal('edit', record); setIsHistoryOpen(false); }}
+        />
+      )}
     </div>
   );
 }

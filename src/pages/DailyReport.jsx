@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from "react-hot-toast";
 import { useConfirm } from "../components/ConfirmProvider";
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Calendar, Save, Plus, Trash2, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -11,6 +11,7 @@ export default function DailyReport() {
   const confirm = useConfirm();
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const reportId = searchParams.get('id');
   const [sites, setSites] = useState([]);
   const [allSubcontractors, setAllSubcontractors] = useState([]);
@@ -199,8 +200,8 @@ export default function DailyReport() {
       }
     }
 
-    // Sync subcontractors
-    if (site && site.site_subcontractors && site.site_subcontractors.length > 0) {
+    // Sync subcontractors (only when creating new report)
+    if (!reportId && site && site.site_subcontractors && site.site_subcontractors.length > 0) {
       const currentSubNames = formData.subcontractors.map(s => s.name).filter(Boolean);
       const siteSubNames = site.site_subcontractors.map(s => s.name);
       
@@ -216,7 +217,7 @@ export default function DailyReport() {
           }))
         }));
       }
-    } else if (formData.subcontractors.length > 0 && formData.subcontractors[0].name !== '') {
+    } else if (!reportId && formData.subcontractors.length > 0 && formData.subcontractors[0].name !== '') {
       setFormData(prev => ({ ...prev, subcontractors: [{ name: '', no_of_labour: '', amount: '', work_details: '' }] }));
     }
   }, [formData.site_id, sites, allStaffList]);
@@ -417,7 +418,7 @@ export default function DailyReport() {
       });
 
       if (res.ok) {
-        
+        navigate('/daily-reports-list');
       } else {
         const errorData = await res.json();
         console.error(errorData);
@@ -743,7 +744,7 @@ export default function DailyReport() {
               {formData.subcontractors.map((sub, i) => (
                 <div key={i} className="flex gap-3 items-start">
                   <input type="text" list="subcontractor-suggestions" placeholder="Subcontractor Name" value={sub.name || ''} onChange={e => handleDynamicChange('subcontractors', i, 'name', e.target.value)} className="w-48 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
-                  <input type="number" placeholder="Labour Count" value={sub.no_of_labour || ''} onChange={e => handleDynamicChange('subcontractors', i, 'no_of_labour', e.target.value)} className="w-28 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
+                  <input type="number" placeholder="Labour Count" value={sub.no_of_labour !== null ? sub.no_of_labour : ''} onChange={e => handleDynamicChange('subcontractors', i, 'no_of_labour', e.target.value)} className="w-28 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="number" placeholder="Amount" value={sub.amount} onChange={e => handleDynamicChange('subcontractors', i, 'amount', e.target.value)} className="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <input type="text" placeholder="Work Details" value={sub.work_details} onChange={e => handleDynamicChange('subcontractors', i, 'work_details', e.target.value)} className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm" />
                   <button onClick={() => removeRow('subcontractors', i)} className="p-2 text-gray-400 hover:text-red-500 mt-0.5"><Trash2 className="w-4 h-4"/></button>
@@ -788,14 +789,18 @@ export default function DailyReport() {
   <datalist id="materials-list">
     {materialsList.map(m => <option key={m.id} value={m.name} />)}
   </datalist>
+
+      <datalist id="units-list">
+        {['Bags', 'Kgs', 'Tonnes', 'Ltrs', 'Nos', 'Trips', 'Cft', 'Sqft', 'Rft', 'Cum', 'Pcs', 'Box', 'Bundle', 'Roll'].map(u => <option key={u} value={u} />)}
+      </datalist>
       <datalist id="subcontractor-suggestions">
         {availableSubcontractorNames.map((name, i) => <option key={i} value={name} />)}
       </datalist>
 
 </td>
-                                <td className="px-4 py-2"><input type="text" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_in', i, 'unit', e.target.value)} /></td>
-                                <td className="px-4 py-2"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_in', i, 'qnty', e.target.value)} /></td>
-                                <td className="px-4 py-2"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.rate} onChange={e => handleDynamicChange('material_in', i, 'rate', e.target.value)} /></td>
+                                <td className="px-4 py-2"><input list="units-list" type="text" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_in', i, 'unit', e.target.value)} /></td>
+                                <td className="px-4 py-2 text-right"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_in', i, 'qnty', e.target.value)} /></td>
+                                <td className="px-4 py-2 text-right"><input type="number" className="w-24 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.rate} onChange={e => handleDynamicChange('material_in', i, 'rate', e.target.value)} /></td>
                                 <td className="px-4 py-2 text-right font-mono">{item.amount || 0}</td>
                                 <td className="px-4 py-2"><button onClick={() => removeRow('material_in', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
                             </tr>
@@ -833,7 +838,7 @@ export default function DailyReport() {
                                 <td className="px-4 py-2">
                                   <input list="materials-list" type="text" placeholder="Type or select..." className="w-36 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.material} onChange={e => handleDynamicChange('material_used', i, 'material', e.target.value)} />
                                 </td>
-                                <td className="px-4 py-2"><input type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_used', i, 'unit', e.target.value)} /></td>
+                                <td className="px-4 py-2"><input list="units-list" type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_used', i, 'unit', e.target.value)} /></td>
                                 <td className="px-4 py-2 text-right"><input type="number" placeholder="0" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_used', i, 'qnty', e.target.value)} /></td>
                                 <td className="px-4 py-2"><input type="text" placeholder="Optional..." className="w-32 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.remark} onChange={e => handleDynamicChange('material_used', i, 'remark', e.target.value)} /></td>
                                 <td className="px-4 py-2"><button onClick={() => removeRow('material_used', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
@@ -879,7 +884,7 @@ export default function DailyReport() {
                                 <td className="px-4 py-2">
                                   <input list="materials-list" type="text" placeholder="Type or select..." className="w-36 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.material} onChange={e => handleDynamicChange('material_transfer', i, 'material', e.target.value)} />
                                 </td>
-                                <td className="px-4 py-2"><input type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_transfer', i, 'unit', e.target.value)} /></td>
+                                <td className="px-4 py-2"><input list="units-list" type="text" placeholder="Unit" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.unit} onChange={e => handleDynamicChange('material_transfer', i, 'unit', e.target.value)} /></td>
                                 <td className="px-4 py-2 text-right"><input type="number" placeholder="0" className="w-20 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent text-right" value={item.qnty} onChange={e => handleDynamicChange('material_transfer', i, 'qnty', e.target.value)} /></td>
                                 <td className="px-4 py-2"><input type="text" placeholder="Optional..." className="w-32 px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded bg-transparent" value={item.remark} onChange={e => handleDynamicChange('material_transfer', i, 'remark', e.target.value)} /></td>
                                 <td className="px-4 py-2"><button onClick={() => removeRow('material_transfer', i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>

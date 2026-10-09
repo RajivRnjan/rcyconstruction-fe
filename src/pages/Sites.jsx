@@ -105,8 +105,8 @@ export default function Sites() {
               <tr>
                 
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Name</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Incharge</th>
-                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">BOQ</th>
+                {/*<th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Site Incharge</th>*/}
+                {/*<th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">BOQ</th>*/}
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-right">Agreement Value</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-right">Bill Value</th>
                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-right">Balance</th>
@@ -127,8 +127,8 @@ export default function Sites() {
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{record.name}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{record.site_incharge ? record.site_incharge.name : '-'}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{record.boq_name || '-'}</td>
+                    {/*<td className="px-6 py-4 text-gray-600 dark:text-gray-400">{record.site_incharge ? record.site_incharge.name : '-'}</td>*/}
+                    {/*<td className="px-6 py-4 text-gray-600 dark:text-gray-400">{record.boq_name || '-'}</td>*/}
                     <td className="px-6 py-4 text-right font-mono text-green-600">₹{parseFloat(record.agreement_value || 0).toLocaleString()}</td>
                     <td className="px-6 py-4 text-right font-mono text-blue-600">₹{parseFloat(record.upto_date_bill_value || 0).toLocaleString()}</td>
                     <td className="px-6 py-4 text-right font-mono text-amber-600">₹{parseFloat(record.balance_work_value || 0).toLocaleString()}</td>
